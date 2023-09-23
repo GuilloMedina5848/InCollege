@@ -22,12 +22,12 @@ def existingUser(existingUsersList):
     print("\nIncorrect username / password, please try again\n")
 
 
-def addToFile(UserCount, username, password, filename="Users.txt"):
+def addToFile(UserCount, username, password, first, last, filename="Users.txt"):
   """
   : Adds the user's details to a file named "Users.txt".
   """
   with open(filename, "a") as file:
-    file.write(f"{UserCount},{username},{password}\n")
+    file.write(f"{UserCount},{username},{password},{first},{last}\n")
   file.close()
 
 
@@ -67,12 +67,14 @@ def createUser(UserCount, existingUsersList):
         "===============================\n1) Password must be 8 - 12 characters\n2) Must contain at least one capital letter\n3) Must contain a number\n4) Must contain a special character\n ================================="
     )
     password = input("Please enter password: ")
+    first = input("Please enter your first name: ")
+    last = input("Please enter your last name: ")
     if UniqueUser(existingUsersList, userID, password):
       print(
           "\nYour username is unique and the password meets all the requirements.\n"
       )
       addToFile(UserCount, userID,
-                password)  # Save the new user information to the file
+                password, first, last)  # Save the new user information to the file
       print("\n============================\n")
       print("Thank you for creating an account.")
       print(f"\nWelcome, {userID}. You have successfully logged in.\n")
@@ -84,7 +86,7 @@ def createUser(UserCount, existingUsersList):
       )
 
 
-def mainMenu():
+def mainMenu(existingUsersList):
   """
    Displays the main menu to the user after they log in.
   """
@@ -97,7 +99,7 @@ def mainMenu():
     mainMenuChoice = input("Enter your choice: ")
 
     if mainMenuChoice == '1':
-      print("under construction.")
+      searchExistingUsers(existingUsersList)  # Call the searchExistingUsers function
     elif mainMenuChoice == '2':
       print("under construction.")
     elif mainMenuChoice == '3':
@@ -122,6 +124,22 @@ def mainMenu():
     else:
       print("Invalid choice. Please enter a valid option.")
 
+def searchExistingUsers(existingUsersList):
+    #Search for existing users based on first and last names.
+    first_name = input("Enter the user's first name: ")
+    last_name = input("Enter the user's last name: ")
+
+    found = False
+    for line in existingUsersList:
+        stored_first_name, stored_last_name = line[3], line[4]
+        if first_name.lower() == stored_first_name.lower() and last_name.lower() == stored_last_name.lower():
+            print("They are a part of the InCollege system.")
+            found = True
+            break
+
+    if not found:
+        print("They are not yet a part of the InCollege system yet.")
+
 
 ################################################
 # Main
@@ -136,11 +154,11 @@ def main():
   UserCount = 0
   with open(filename, "r") as file:
     for line in file:  # reading each line
-      userIndex, stored_username, stored_password = line.strip().split(
+      userIndex, stored_username, stored_password, first, last = line.strip().split(
           ',')  # parsing each line
       existingUsersList.append(
           (userIndex, stored_username,
-           stored_password))  # adding it to the list of users
+           stored_password, first, last))  # adding it to the list of users
       UserCount += 1  # incrementing each user
 
   # variable so that loops run until we tell it to stop
@@ -148,14 +166,14 @@ def main():
   # loop that runs infinitely if given the wrong choice
   while run:
     print(
-        "============================\nFor Existing Users Enter: 1 \nTo Create an Account Enter: 2\n============================\n"
+        "============================\nFor Existing Users Enter: 1 \nTo Create an Account Enter: 2\nTo Find an Existing User: 3\n============================\n"
     )
     # Ask for user input
     choice = input("Enter Your Choice: ")
     # if the correct choice then the loop stops
     if choice == '1':
       existingUser(existingUsersList)
-      mainMenu()  # Call the main menu function for logged-in users
+      mainMenu(existingUsersList)  # Call the main menu function for logged-in users
       run = False
     elif choice == '2':
       # if statement to check if there are too many users:
@@ -167,6 +185,8 @@ def main():
         UserCount += 1
         createUser(UserCount, existingUsersList)
         run = False
+    elif choice == '3':
+            searchExistingUsers(existingUsersList)  # Call the searchExistingUsers function
     else:
       print("Your input was incorrect. Please input a correct value.")
       pass
