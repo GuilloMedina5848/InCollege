@@ -79,7 +79,7 @@ def createUser(UserCount, existingUsersList):
       print("Thank you for creating an account.")
       print(f"\nWelcome, {userID}. You have successfully logged in.\n")
       run = False
-      mainMenu()  # Call the main menu function for logged-in users
+      mainMenu(existingUsersList)  # Call the main menu function for logged-in users
     else:
       print(
           "\nYour username is already taken or the password doesn't meet requirements. Please start over\n"

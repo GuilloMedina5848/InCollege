@@ -6,7 +6,12 @@ import pytest
 # so we start by saving the Users.txt contents to a string and erasing it. At the start of every test, we erase it again (to clear any alterations from previous tests) and the final test (see test_dummy) writes the string back to the Users.txt file
 
 copy = ""
-
+defaultUser = "pyTestUser"
+defaultPassword = "pyTest123%"
+defaultFirstName = "pyTest"
+defaultLastName = "User"
+defaultUserString = f"1,{defaultUser},{defaultPassword},{defaultFirstName},{defaultLastName}\n"
+maxUsers = 5
 
 def userClear():
   open("Users.txt", "w").close(
@@ -32,7 +37,7 @@ def userPaste():
 # don't use this function unless you need an existing user! start the function with userClear() instead
 def startTest():
   userClear()
-  open("Users.txt", "w").write("1,pyTestUser,pyTest123%")
+  open("Users.txt", "w").write(defaultUserString)
 
 
 userCut()  # program starts by saving a copy of the existing Users.txt file to be copied back later
@@ -64,7 +69,7 @@ userCut()  # program starts by saving a copy of the existing Users.txt file to b
 def test_mainScreen(monkeypatch, capsys):
   userClear()
 
-  inputs = iter(['2', 'pyTestUser', 'pyTest123%', '4'])
+  inputs = iter(['2', defaultUser, defaultPassword, defaultFirstName, defaultLastName, '4'])
   monkeypatch.setattr('builtins.input', lambda _: next(inputs))
 
   main()
@@ -72,22 +77,21 @@ def test_mainScreen(monkeypatch, capsys):
   assert capsys.readouterr().out.split('\n')[-2] == "Logging out."
 
 
-# tests the main screen for inputs out of range [1,2]
+# tests the main screen for inputs out of range [1,3]
 def test_mainScreenRange(monkeypatch, capsys):
   startTest()
 
-  testInts = [3, -1, 999999, 200, -999999]
+  testInts = [4, -1, 999999, 200, -999999]
 
   for testInt in testInts:
 
-    inputs = iter([testInt, '1', 'pyTestUser', 'pyTest123%', '4'])
+    inputs = iter([testInt, '1', defaultUser, defaultPassword, '4'])
     monkeypatch.setattr('builtins.input', lambda _: next(inputs))
 
     main()
 
-    assert capsys.readouterr().out.split(
-        '\n')[9] == "Your input was incorrect. Please input a correct value."
-    assert open("Users.txt", "r").read() == "1,pyTestUser,pyTest123%"
+    assert "Your input was incorrect. Please input a correct value." in capsys.readouterr().out
+    assert open("Users.txt", "r").read() == defaultUserString
 
 
 # tests the main screen for char inputs
@@ -98,14 +102,13 @@ def test_mainScreenChar(monkeypatch, capsys):
 
   for testChar in testChars:
 
-    inputs = iter([testChar, '1', 'pyTestUser', 'pyTest123%', '4'])
+    inputs = iter([testChar, '1', defaultUser, defaultPassword, '4'])
     monkeypatch.setattr('builtins.input', lambda _: next(inputs))
 
     main()
 
-    assert capsys.readouterr().out.split(
-        '\n')[9] == "Your input was incorrect. Please input a correct value."
-    assert open("Users.txt", "r").read() == "1,pyTestUser,pyTest123%"
+    assert "Your input was incorrect. Please input a correct value." in capsys.readouterr().out
+    assert open("Users.txt", "r").read() == defaultUserString
 
 
 # tests the main screen for float inputs
@@ -116,14 +119,13 @@ def test_mainScreenFloat(monkeypatch, capsys):
 
   for testFloat in testFloats:
 
-    inputs = iter([testFloat, '1', 'pyTestUser', 'pyTest123%', '4'])
+    inputs = iter([testFloat, '1', defaultUser, defaultPassword, '4'])
     monkeypatch.setattr('builtins.input', lambda _: next(inputs))
 
     main()
 
-    assert capsys.readouterr().out.split(
-        '\n')[9] == "Your input was incorrect. Please input a correct value."
-    assert open("Users.txt", "r").read() == "1,pyTestUser,pyTest123%"
+    assert "Your input was incorrect. Please input a correct value." in capsys.readouterr().out
+    assert open("Users.txt", "r").read() == defaultUserString
 
 
 # tests new user creation with valid username/password
@@ -140,13 +142,12 @@ def test_newUser(monkeypatch, capsys):
 
   for testUsernamePassword in testUsernamesPasswords:
 
-    inputs = iter(["2", testUsernamePassword[0], testUsernamePassword[1], "4"])
+    inputs = iter(["2", testUsernamePassword[0], testUsernamePassword[1], defaultFirstName, defaultLastName, "4"])
     monkeypatch.setattr('builtins.input', lambda _: next(inputs))
 
     main()
     assert capsys.readouterr().out.split('\n')[-2] == "Logging out."
-    users += str(i) + ',' + testUsernamePassword[
-        0] + ',' + testUsernamePassword[1] + '\n'
+    users += f"{str(i)},{testUsernamePassword[0]},{testUsernamePassword[1]},{defaultFirstName},{defaultLastName}\n"
     assert open("Users.txt", "r").read() == users
     i += 1
 
@@ -161,15 +162,13 @@ def test_newUserInvalidCharacter(monkeypatch, capsys):
 
   for testPassword in testPasswords:
     inputs = iter(
-        ["2", "pyTestUser", testPassword, "pyTestUser", "pyTest123%", "4"])
+        ["2", defaultUser, testPassword, defaultFirstName, defaultLastName, defaultUser, defaultPassword, defaultFirstName, defaultLastName, "4"])
     monkeypatch.setattr('builtins.input', lambda _: next(inputs))
 
     main()
 
-    assert capsys.readouterr().out.split(
-        '\n'
-    )[19] == "Your username is already taken or the password doesn't meet requirements. Please start over"
-    assert open("Users.txt", "r").read() == "1,pyTestUser,pyTest123%\n"
+    assert "Your username is already taken or the password doesn't meet requirements. Please start over" in capsys.readouterr().out
+    assert open("Users.txt", "r").read() == defaultUserString
     userClear()
 
 
@@ -182,18 +181,16 @@ def test_newUserInvalidLength(monkeypatch, capsys):
   for testPassword in testPasswords:
     # simulate inputs: choose to create an account, provide a username and the test password, then provide a valid username and password combo to terminate the program
     inputs = iter(
-        ["2", "testUser", testPassword, "pyTestUser", "pyTest123%", "4"])
+        ["2", defaultUser, testPassword, defaultFirstName, defaultLastName, defaultUser, defaultPassword, defaultFirstName, defaultLastName, "4"])
     monkeypatch.setattr('builtins.input', lambda _: next(inputs))
 
     main()
 
     # test if the output informs the user of the invalid password
-    assert capsys.readouterr().out.split(
-        '\n'
-    )[19] == "Your username is already taken or the password doesn't meet requirements. Please start over"
+    assert "Your username is already taken or the password doesn't meet requirements. Please start over" in capsys.readouterr().out
 
     # make sure no new users were added to the Users.txt file with invalid input
-    assert open("Users.txt", "r").read() == "1,pyTestUser,pyTest123%\n"
+    assert open("Users.txt", "r").read() == defaultUserString
     userClear()
 
 
@@ -203,14 +200,14 @@ def test_newUserInvalidExisting(monkeypatch, capsys):
   userClear()
 
   testUsernames = [
-      "pyTestUser", "pyTestUser2", "thisIsALongTestStringPyTestUser3", "4"
+      "pyTestUser1", "pyTestUser2", "thisIsALongTestStringPyTestUser3", "4"
   ]
 
   users = ""
   i = 1
 
   for testUsername in testUsernames:
-    users += str(i) + ',' + testUsername + ',' + "pyTest123%" + '\n'
+    users += str(i) + ',' + testUsername + ',' + defaultPassword + ',' + defaultFirstName + ',' + defaultLastName + '\n'
     i += 1
 
   file = open("Users.txt", "w")
@@ -219,14 +216,13 @@ def test_newUserInvalidExisting(monkeypatch, capsys):
 
   for testUsername in testUsernames:
     inputs = iter([
-        "2", testUsername, "pyTest123%", "terminationUser", "pyTest123%", "4"
+        "2", testUsername, defaultPassword, defaultFirstName, defaultLastName, defaultUser, defaultPassword, defaultFirstName, defaultLastName, "4"
     ])
     monkeypatch.setattr('builtins.input', lambda _: next(inputs))
 
     main()
     assert capsys.readouterr().out.split('\n')[-2] == "Logging out."
-    assert open("Users.txt", "r").read(
-    ) == users + str(i) + ',' + "terminationUser" + ',' + "pyTest123%" + '\n'
+    assert open("Users.txt", "r").read() == users + f"{str(i)},{defaultUser},{defaultPassword},{defaultFirstName},{defaultLastName}\n"
     file = open("Users.txt", "w")
     file.write(users)
     file.close()
@@ -235,13 +231,15 @@ def test_newUserInvalidExisting(monkeypatch, capsys):
 # tests new user creation with maximum number of users
 def test_newUserExceedsLimit(monkeypatch, capsys):
   userClear()
-  # fill Users.txt with 5 users
+
+  # fill Users.txt with the maximum number of users
   with open("Users.txt", "w") as file:
-    for i in range (5):
-      file.write(f"{i},pyTestUser{i},password{i}%\n")
+    file.write(defaultUserString)
+    for i in range(2,maxUsers+1):
+      file.write(f"{i},{defaultUser}{i},{defaultPassword},{defaultFirstName},{defaultLastName}\n")
 
   # create the 6th account
-  inputs = iter(["2", "1", "pyTestUser1", "password1%", "4"])
+  inputs = iter(["2", "1", defaultUser, defaultPassword, "4"])
   monkeypatch.setattr('builtins.input', lambda _: next(inputs))
     
   main()
@@ -253,7 +251,7 @@ def test_newUserExceedsLimit(monkeypatch, capsys):
   # Check if the new user was not added to the Users.txt file
   with open("Users.txt", "r") as file:
     users = file.readlines()
-    assert len(users) == 5  # Ensure there are only 5 users in the file
+    assert len(users) == maxUsers # Ensure there are only 5 users in the file
 
  
 
@@ -270,8 +268,7 @@ def test_loginExistingUser(monkeypatch, capsys):
   i = 1
 
   for testUsernamePassword in testUsernamesPasswords:
-    users += str(i) + ',' + testUsernamePassword[
-        0] + ',' + testUsernamePassword[1] + '\n'
+    users += f"{str(i)},{testUsernamePassword[0]},{testUsernamePassword[1]},{defaultFirstName},{defaultLastName}\n"
     i += 1
 
   file = open("Users.txt", "w")
@@ -279,7 +276,7 @@ def test_loginExistingUser(monkeypatch, capsys):
   file.close()
 
   for testUsernamePassword in testUsernamesPasswords:
-    inputs = iter(["1", testUsernamePassword[0], testUsernamePassword[1], "4"])
+    inputs = iter(["1", testUsernamePassword[0], testUsernamePassword[1], defaultFirstName, defaultLastName, "4"])
     monkeypatch.setattr('builtins.input', lambda _: next(inputs))
 
     main()
@@ -289,12 +286,9 @@ def test_loginExistingUser(monkeypatch, capsys):
 
 # tests login attempt with invalid username.
 def test_loginInvalidUsername(monkeypatch, capsys):
-  userClear()
-  # Add a known user
-  with open("Users.txt", "w") as file:
-    file.write("1,knownUser,knownPassword%\n")
+  startTest()
   
-  inputs = iter(["1", "invalidUser", "knownPassword%", "knownUser", "knownPassword%", "4"])
+  inputs = iter(["1", "invalidUser", defaultPassword, defaultUser, defaultPassword, "4"])
   monkeypatch.setattr('builtins.input', lambda _: next(inputs))
 
   main()
@@ -306,13 +300,9 @@ def test_loginInvalidUsername(monkeypatch, capsys):
 
 # tests login attempt with valid username but incorrect password
 def test_loginInvalidPassword(monkeypatch, capsys):
-  userClear()
-  
-  # Add a known user
-  with open("Users.txt", "w") as file:
-    file.write("1,knownUser,knownPassword%\n")
+  startTest()
  
-  inputs = iter(["1", "knownUser", "invalidPassword%", "knownUser", "knownPassword%", "4"])
+  inputs = iter(["1", defaultUser, "invalidPassword%", defaultUser, defaultPassword, "4"])
   monkeypatch.setattr('builtins.input', lambda _: next(inputs))
 
   main()
@@ -325,19 +315,19 @@ def test_loginInvalidPassword(monkeypatch, capsys):
 def test_searchUser(monkeypatch, capsys):
   startTest()
 
-  inputs = iter(["1", "pyTestUser", "pyTest123%", "1", "4"])
+  inputs = iter(["1", defaultUser, defaultPassword, "1", defaultFirstName, defaultLastName, "4"])
   monkeypatch.setattr('builtins.input', lambda _: next(inputs))
 
   main()
 
-  assert capsys.readouterr().out.split('\n')[-2] == "Logging out."
+  assert "They are a part of the InCollege system." in capsys.readouterr().out
 
 
 # tests the search job feature
 def test_searchJob(monkeypatch, capsys):
   startTest()
 
-  inputs = iter(["1", "pyTestUser", "pyTest123%", "2", "4"])
+  inputs = iter(["1", defaultUser, defaultPassword, "2", "4"])
   monkeypatch.setattr('builtins.input', lambda _: next(inputs))
 
   main()
@@ -351,7 +341,7 @@ def test_searchSkill(monkeypatch, capsys):
 
   for i in range(1, 5):
 
-    inputs = iter(['1', 'pyTestUser', 'pyTest123%', '3', i, '6', '4'])
+    inputs = iter(['1', defaultUser, defaultPassword, '3', i, '6', '4'])
     monkeypatch.setattr('builtins.input', lambda _: next(inputs))
 
     main()
