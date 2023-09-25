@@ -104,7 +104,7 @@ def test_mainScreenVideo(monkeypatch, capsys):
 def test_mainScreenSearchUser(monkeypatch, capsys):
   startTest()
 
-  prompts = iter([{0: 'Search for an existing user of inCollege'}, {0: 'Exit'}])
+  prompts = iter([{0: 'To Find an Existing User'}, {0: 'Exit'}])
   monkeypatch.setattr('main.prompt', lambda _: next(prompts))
 
   inputs = iter([defaultFirstName, defaultLastName])
@@ -122,7 +122,7 @@ def test_mainScreenSearchInvalidUser(monkeypatch, capsys):
 
   for testName in testNames:
 
-    prompts = iter([{0: 'Search for an existing user of inCollege'}, {0: 'Exit'}])
+    prompts = iter([{0: 'To Find an Existing User'}, {0: 'Exit'}])
     monkeypatch.setattr('main.prompt', lambda _: next(prompts))
 
     inputs = iter([testName[0], testName[1]])
@@ -171,8 +171,7 @@ def test_newUserInvalidCharacter(monkeypatch, capsys):
     prompts = iter([{0: 'To Create an Account'}, {0: 'Log out'}])
     monkeypatch.setattr('main.prompt', lambda _: next(prompts))
 
-    inputs = iter(
-        [defaultUser, testPassword, defaultFirstName, defaultLastName, defaultUser, defaultPassword, defaultFirstName, defaultLastName])
+    inputs = iter([defaultUser, testPassword, defaultFirstName, defaultLastName, defaultUser, defaultPassword, defaultFirstName, defaultLastName])
     monkeypatch.setattr('builtins.input', lambda _: next(inputs))
 
     main()
