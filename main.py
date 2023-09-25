@@ -1,5 +1,5 @@
 import re
-
+from InquirerPy import prompt
 
 ##################################################
 # Definitions of Function
@@ -91,38 +91,64 @@ def mainMenu(existingUsersList):
    Displays the main menu to the user after they log in.
   """
   while True:
-    print("\nMain Menu:")
-    print("1. Find someone you know")
-    print("2. Search for a job")
-    print("3. Learn a new skill")
-    print("4. Log out")
-    mainMenuChoice = input("Enter your choice: ")
-
-    if mainMenuChoice == '1':
-      searchExistingUsers(existingUsersList)  # Call the searchExistingUsers function
-    elif mainMenuChoice == '2':
-      print("under construction.")
-    elif mainMenuChoice == '3':
-      while True:
-        print("\nSkills Available:")
-        print("1. Team Work")
-        print("2. Clean Code")
-        print("3. Customer Service")
-        print("4. Marketing")
-        print("5. Management")
-        print("6. Return to the main menu")
-        skillChoice = input("Enter your choice: ")
-        if skillChoice in ['1', '2', '3', '4', '5']:
+    try: 
+      choice = prompt({
+                    "type": "list",
+                    "message" : "Main Menu:",
+                    "choices": ["Find someone you know", "Search for a job", "Learn a new skill", "Log out"]
+      })
+      
+      match choice[0]:
+        case "Find someone you know":
+          # Call the searchExistingUsers function
+          searchExistingUsers(existingUsersList)
+    
+        case "Search for a job":
           print("under construction.")
-        elif skillChoice == '6':
+    
+        case "Learn a new skill":
+          while True:
+            try:
+              choice = prompt({
+                    "type": "list",
+                    "message" : "Skills Available:",
+                    "choices": ["Team Work", "Clean Code", "Customer Service", "Marketing", "Management", "Return to the main menu"]
+              })
+              
+              match choice[0]:
+                case "Team Work":
+                  print("under construction.")
+            
+                case "Clean Code":
+                  print("under construction.")
+            
+                case "Customer Service":
+                  print("under construction.")
+            
+                case "Marketing":
+                  print("under construction.")
+            
+                case "Management":
+                  print("under construction.")
+            
+                case "Return to the main menu":
+                  break
+            
+                case __:    # <--- Else
+                  raise ValueError
+            
+            except ValueError:              
+              print("Invalid choice. Please enter a valid option.")
+        
+        case "Log out":
+          print("Logging out.")
           break
-        else:
-          print("Invalid choice. Please enter a valid option.")
-    elif mainMenuChoice == '4':
-      print("Logging out.")
-      break
-    else:
-      print("Invalid choice. Please enter a valid option.")
+    
+        case __:    # <--- Else
+              raise ValueError
+    
+    except ValueError:
+      print("\nInvalid choice. Please enter a valid option.\n")
 
 def searchExistingUsers(existingUsersList):
     #Search for existing users based on first and last names.
@@ -133,12 +159,12 @@ def searchExistingUsers(existingUsersList):
     for line in existingUsersList:
         stored_first_name, stored_last_name = line[3], line[4]
         if first_name.lower() == stored_first_name.lower() and last_name.lower() == stored_last_name.lower():
-            print("They are a part of the InCollege system.")
+            print("\nThey are a part of the InCollege system.\n")
             found = True
             break
 
     if not found:
-        print("They are not yet a part of the InCollege system yet.")
+        print("\nThey are not yet a part of the InCollege system yet.\n")
 
 
 ################################################
@@ -146,7 +172,10 @@ def searchExistingUsers(existingUsersList):
 ##################################################
 def main():
   print("\n Welcome to InCollege!")
-  print("============================\n")
+  print("\n============================\n")
+  print("Steven's story:\n")
+  print("When I first started college during my freshman year I was very shy and didn’t really have many close friends or connections to other people besides my small circle of friends. On top of that, I was looking for a part-time job to help my parents pay my tuition for college, the problem was that I didn’t really had a resume to boast about or any real work history, so no working professional really wanted to talk to me. That same freshman year a professor introduced us to inCollege during a class and I tried it out of curiosity, it made all the difference. inCollege allowed me to connect with other college students at other universities who were in my major and talk about school, jobs, and projects. Being online meant that even if I was shy I was still able to create relationships with real people from outside my small circle of friends and expand my connections. Having a connection made all the difference when talking to people about job, salaries, and offers. inCollege understands that everyone's looking for a first job and will provide the tools that they need in order to be successful. Not only was I able to find a part-time job during my college years, but it even landed me a job I was not expecting. One of my friends I made during inCollege got the job first and after working there for a while referred me to his boss, I already had a position at a well-recognized company before I even graduated! By the time I transitioned to LinkedIn I had more experiences I could use on my resume. My time using inCollege really made all the difference for me and sure it will help you too. Whether it is creating an identity on inCollege, creating connections with other students from other universities, or accessing job information, inCollege will help provide you the tools you need.")
+  print("\n============================\n")
   # initializing a list of tuples to store existing users:
   existingUsersList = []  # tuple = (index, userID, password)
   # storing information from the file to a tuple:
@@ -165,32 +194,48 @@ def main():
   run = True
   # loop that runs infinitely if given the wrong choice
   while run:
-    print(
-        "============================\nFor Existing Users Enter: 1 \nTo Create an Account Enter: 2\nTo Find an Existing User: 3\n============================\n"
-    )
-    # Ask for user input
-    choice = input("Enter Your Choice: ")
-    # if the correct choice then the loop stops
-    if choice == '1':
-      existingUser(existingUsersList)
-      mainMenu(existingUsersList)  # Call the main menu function for logged-in users
-      run = False
-    elif choice == '2':
-      # if statement to check if there are too many users:
-      if UserCount >= 5:
-        print(
-            "\nAll permitted accounts have been created, please come back later\n"
-        )
-      else:
-        UserCount += 1
-        createUser(UserCount, existingUsersList)
-        run = False
-    elif choice == '3':
-            searchExistingUsers(existingUsersList)  # Call the searchExistingUsers function
-    else:
-      print("Your input was incorrect. Please input a correct value.")
-      pass
+    try:
+      # Ask for user input
+      choice = prompt({
+                  "type": "list",
+                  "message" : "Login page",
+                  "choices": ["Learn why you should join inCollege", "For Existing Users", "To Create an Account", "To Find an Existing User", "Exit"]
+      })
+      match choice[0]:
+        case "For Existing Users":
+          existingUser(existingUsersList)
+          mainMenu(existingUsersList)  # Call the main menu function for logged-in users
+          run = False
+    
+        case "To Create an Account":
+          # if statement to check if there are too many users:
+          if UserCount >= 5:
+            print(
+                "\nAll permitted accounts have been created, please come back later\n"
+            )
+          else:
+            UserCount += 1
+            createUser(UserCount, existingUsersList)
+            run = False
+    
+        case "To Find an Existing User":
+          # Call the searchExistingUsers function
+          searchExistingUsers(existingUsersList)
 
+        case "Learn why you should join inCollege":
+          print(            "\n============================\n============================\n====Video is now playing====\n============================\n============================\n"
+               )
+          
+        case "Exit":
+          print("Thank you, bye!")
+          break
+    
+        case __:    # <--- Else
+          raise ValueError
+    
+    except ValueError:
+            print("Choice not found, please try again.\n")
+      
 
 if __name__ == "__main__":
   main()
