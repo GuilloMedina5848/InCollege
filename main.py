@@ -4,6 +4,53 @@ from InquirerPy import prompt
 ##################################################
 # Definitions of Function
 ##################################################
+
+def addJob(jobsList, userID):
+    """
+    Allows a logged-in user to post a job.
+    """
+    if len(jobsList) >= 5:
+        print("You have reached the maximum limit of job postings (5).")
+        return
+
+    print("\n============================\n")
+    title = input("Please enter the job title: ")
+    description = input("Please enter the job description: ")
+    employer = input("Please enter the employer: ")
+    location = input("Please enter the location: ")
+    salary = input("Please enter the salary: ")
+
+    jobsList.append((userID, title, description, employer, location, salary))
+    saveJobs(jobsList)
+    print("\nJob posted successfully!")
+
+def saveJobs(jobsList, filename="Jobs.txt"):
+    """
+    Save the list of jobs to a file named "Jobs.txt".
+    """
+    with open(filename, "w") as file:
+        for job in jobsList:
+            file.write(",".join(job) + "\n")
+
+def printJobs(jobsList):
+    """
+    Displays the list of posted jobs.
+    """
+    print("\n============================\n")
+    if not jobsList:
+        print("No jobs are currently posted.")
+    else:
+        print("Posted Jobs:")
+        for i, job in enumerate(jobsList):
+            _, title, description, employer, location, salary = job
+            print(f"Job {i + 1}:")
+            print(f"Title: {title}")
+            print(f"Description: {description}")
+            print(f"Employer: {employer}")
+            print(f"Location: {location}")
+            print(f"Salary: {salary}")
+            print("\n------------------------\n")
+
 def existingUser(existingUsersList):
   """
   allow existing user to log in
@@ -133,7 +180,7 @@ def mainMenu(existingUsersList):
             
                 case "Return to the main menu":
                   break
-            
+                  
                 case __:    # <--- Else
                   raise ValueError
             
@@ -189,6 +236,17 @@ def main():
           (userIndex, stored_username,
            stored_password, first, last))  # adding it to the list of users
       UserCount += 1  # incrementing each user
+  jobsList = []
+    # Load jobs from the file if available
+  jobsFilename = "Jobs.txt"
+  try:
+      with open(jobsFilename, "r") as jobsFile:
+          for line in jobsFile:
+              user_id, title, description, employer, location, salary = line.strip().split(',')
+              jobsList.append((user_id, title, description, employer, location, salary))
+  except FileNotFoundError:
+      pass  # If the file doesn't exist, start with an empty jobs list
+
 
   # variable so that loops run until we tell it to stop
   run = True
@@ -205,7 +263,6 @@ def main():
         case "For Existing Users":
           existingUser(existingUsersList)
           mainMenu(existingUsersList)  # Call the main menu function for logged-in users
-          run = False
     
         case "To Create an Account":
           # if statement to check if there are too many users:
@@ -216,7 +273,6 @@ def main():
           else:
             UserCount += 1
             createUser(UserCount, existingUsersList)
-            run = False
     
         case "To Find an Existing User":
           # Call the searchExistingUsers function
