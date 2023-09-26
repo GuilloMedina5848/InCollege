@@ -64,7 +64,7 @@ def existingUser(existingUsersList):
         print(
             f"\nWelcome, {existingUserID}. You have successfully logged in.\n")
         run = False
-        return True
+        return existingUserID
 
     print("\nIncorrect username / password, please try again\n")
 
@@ -126,14 +126,14 @@ def createUser(UserCount, existingUsersList):
       print("Thank you for creating an account.")
       print(f"\nWelcome, {userID}. You have successfully logged in.\n")
       run = False
-      mainMenu(existingUsersList)  # Call the main menu function for logged-in users
+      mainMenu(existingUsersList, jobsList, userID)  # Call the main menu function for logged-in users
     else:
       print(
           "\nYour username is already taken or the password doesn't meet requirements. Please start over\n"
       )
 
 
-def mainMenu(existingUsersList):
+def mainMenu(existingUsersList, jobsList, userID):
   """
    Displays the main menu to the user after they log in.
   """
@@ -142,7 +142,7 @@ def mainMenu(existingUsersList):
       choice = prompt({
                     "type": "list",
                     "message" : "Main Menu:",
-                    "choices": ["Find someone you know", "Search for a job", "Learn a new skill", "Log out"]
+                    "choices": ["Find someone you know", "Job search/internship", "Learn a new skill", "Log out"]
       })
       
       match choice[0]:
@@ -150,8 +150,31 @@ def mainMenu(existingUsersList):
           # Call the searchExistingUsers function
           searchExistingUsers(existingUsersList)
     
-        case "Search for a job":
-          print("under construction.")
+        case "Job search/internship":
+          while True:
+            try:
+              choice = prompt({
+                    "type": "list", 
+                    "message" : "Select one:",
+                    "choices": ["Search for a job", "Post a job", "Return to the main menu"]
+              })
+
+              match choice[0]:
+                case "Search for a job":
+                  print("\nunder construction.\n")
+
+                case "Post a job":
+                  addJob(jobsList, userID)
+
+                case "Return to the main menu":
+                  break
+                    
+                case __:    # <--- Else
+                  raise ValueError
+            
+            except ValueError:              
+              print("Invalid choice. Please enter a valid option.")
+
     
         case "Learn a new skill":
           while True:
@@ -164,19 +187,19 @@ def mainMenu(existingUsersList):
               
               match choice[0]:
                 case "Team Work":
-                  print("under construction.")
+                  print("\nunder construction.\n")
             
                 case "Clean Code":
-                  print("under construction.")
+                  print("\nunder construction.\n")
             
                 case "Customer Service":
-                  print("under construction.")
+                  print("\nunder construction.\n")
             
                 case "Marketing":
-                  print("under construction.")
+                  print("\nunder construction.\n")
             
                 case "Management":
-                  print("under construction.")
+                  print("\nunder construction.\n")
             
                 case "Return to the main menu":
                   break
@@ -188,7 +211,7 @@ def mainMenu(existingUsersList):
               print("Invalid choice. Please enter a valid option.")
         
         case "Log out":
-          print("Logging out.")
+          print("Logging out.\n")
           break
     
         case __:    # <--- Else
@@ -257,12 +280,12 @@ def main():
       choice = prompt({
                   "type": "list",
                   "message" : "Login page",
-                  "choices": ["Learn why you should join inCollege", "For Existing Users", "To Create an Account", "To Find an Existing User", "Exit"]
+                  "choices": ["Learn why you should join InCollege", "For Existing Users", "To Create an Account", "To Find an Existing User", "Exit"]
       })
       match choice[0]:
         case "For Existing Users":
-          existingUser(existingUsersList)
-          mainMenu(existingUsersList)  # Call the main menu function for logged-in users
+          userID = existingUser(existingUsersList)
+          mainMenu(existingUsersList, jobsList, userID)  # Call the main menu function for logged-in users
     
         case "To Create an Account":
           # if statement to check if there are too many users:
@@ -278,12 +301,12 @@ def main():
           # Call the searchExistingUsers function
           searchExistingUsers(existingUsersList)
 
-        case "Learn why you should join inCollege":
+        case "Learn why you should join InCollege":
           print(            "\n============================\n============================\n====Video is now playing====\n============================\n============================\n"
                )
           
         case "Exit":
-          print("Thank you, bye!")
+          print("Thank you, bye!\n")
           break
     
         case __:    # <--- Else
