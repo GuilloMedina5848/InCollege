@@ -4,7 +4,7 @@ import pytest
 # these functions are for managing the Users.txt file; we don't want the file to be altered in any way after the tests are completed and we don't want the test output to rely on the existing file being in a certain state.
 # so we start by saving the Users.txt contents to a string and erasing it. At the start of every test, we erase it again (to clear any alterations from previous tests) and the final test (see test_dummy) writes the string back to the Users.txt file
 
-copy = ""
+userCopy = ""
 defaultUser = "pyTestUser"
 defaultPassword = "pyTest123%"
 defaultFirstName = "pyTest"
@@ -12,25 +12,29 @@ defaultLastName = "User"
 defaultUserString = f"1,{defaultUser},{defaultPassword},{defaultFirstName},{defaultLastName}\n"
 maxUsers = 5
 
-def userClear():
-  open("Users.txt", "w").close(
-  )  # opens the Users file in write mode, deleting its contents, then closes it
+jobCopy = ""
+defaultTitle = "pyTester"
+defaultDescription = "testsPython"
+defaultEmployer = "pyTest"
+defaultLocation = "pyTest"
+defaultSalary = "0"
+defaultJobString = f"{defaultFirstName},{defaultLastName},{defaultTitle},{defaultDescription},{defaultEmployer},{defaultLocation},${'{:,.2f}'.format(float(defaultSalary))}\n"
+maxJobs = 5
 
+def userClear():
+  open("Users.txt", "w").close()  # opens the Users file in write mode, deleting its contents, then closes it
 
 def userCut():
-  global copy
+  global userCopy
   userFile = open("Users.txt", "r")
-  copy = userFile.read(
-  )  # make a copy of the file contents to rewrite to the file after the test is completed
+  userCopy = userFile.read()  # make a copy of the file contents to rewrite to the file after the test is completed
   userFile.close()
   userClear()
 
-
 def userPaste():
   userFile = open("Users.txt", "w")
-  userFile.write(copy)
+  userFile.write(userCopy)
   userFile.close()
-
 
 # function to start tests which require an existing user to be able to log in
 # don't use this function unless you need an existing user! start the function with userClear() instead
@@ -38,7 +42,23 @@ def startTest():
   userClear()
   open("Users.txt", "w").write(defaultUserString)
 
-userCut()  # program starts by saving a copy of the existing Users.txt file to be copied back later
+def jobClear():
+  open("Jobs.txt", "w").close()
+
+def jobCut():
+  global jobCopy
+  jobFile = open("Jobs.txt", "r")
+  jobCopy = jobFile.read()  # make a copy of the file contents to rewrite to the file after the test is completed
+  jobFile.close()
+  jobClear()
+
+def jobPaste():
+  jobFile = open("Jobs.txt", "w")
+  jobFile.write(jobCopy)
+  jobFile.close()
+
+userCut() # program starts by saving a copy of the existing Users.txt and Jobs.txt files to be copied back later
+jobCut()
 
 ###########
 ## TESTS ##
@@ -74,7 +94,7 @@ def test_mainScreen(monkeypatch, capsys):
   main()
 
   captured_output = capsys.readouterr().out
-  assert captured_output.split('\n')[-2] == "Thank you, bye!"
+  assert captured_output.split('\n')[-3] == "Thank you, bye!"
 
 # tests if the main screen prints the success story
 def test_mainScreenStory(monkeypatch, capsys):
@@ -92,7 +112,7 @@ def test_mainScreenStory(monkeypatch, capsys):
 def test_mainScreenVideo(monkeypatch, capsys):
   userClear()
 
-  prompts = iter([{0: 'Learn why you should join inCollege'}, {0: 'Exit'}])
+  prompts = iter([{0: 'Learn why you should join InCollege'}, {0: 'Exit'}])
   monkeypatch.setattr('main.prompt', lambda _: next(prompts))
 
   main()
@@ -146,14 +166,14 @@ def test_newUser(monkeypatch, capsys):
 
   for testUsernamePassword in testUsernamesPasswords:
 
-    prompts = iter([{0: 'To Create an Account'}, {0: 'Log out'}])
+    prompts = iter([{0: 'To Create an Account'}, {0: 'Log out'}, {0: 'Exit'}])
     monkeypatch.setattr('main.prompt', lambda _: next(prompts))
 
     inputs = iter([testUsernamePassword[0], testUsernamePassword[1], defaultFirstName, defaultLastName])
     monkeypatch.setattr('builtins.input', lambda _: next(inputs))
 
     main()
-    assert capsys.readouterr().out.split('\n')[-2] == "Logging out."
+    assert capsys.readouterr().out.split('\n')[-3] == "Thank you, bye!"
     users += f"{str(i)},{testUsernamePassword[0]},{testUsernamePassword[1]},{defaultFirstName},{defaultLastName}\n"
     assert open("Users.txt", "r").read() == users
     i += 1
@@ -168,7 +188,7 @@ def test_newUserInvalidCharacter(monkeypatch, capsys):
 
   for testPassword in testPasswords:
 
-    prompts = iter([{0: 'To Create an Account'}, {0: 'Log out'}])
+    prompts = iter([{0: 'To Create an Account'}, {0: 'Log out'}, {0: 'Exit'}])
     monkeypatch.setattr('main.prompt', lambda _: next(prompts))
 
     inputs = iter([defaultUser, testPassword, defaultFirstName, defaultLastName, defaultUser, defaultPassword, defaultFirstName, defaultLastName])
@@ -189,7 +209,7 @@ def test_newUserInvalidLength(monkeypatch, capsys):
   for testPassword in testPasswords:
     # simulate inputs: choose to create an account, provide a username and the test password, then provide a valid username and password combo to terminate the program
 
-    prompts = iter([{0: 'To Create an Account'}, {0: 'Log out'}])
+    prompts = iter([{0: 'To Create an Account'}, {0: 'Log out'}, {0: 'Exit'}])
     monkeypatch.setattr('main.prompt', lambda _: next(prompts))
 
     inputs = iter([defaultUser, testPassword, defaultFirstName, defaultLastName, defaultUser, defaultPassword, defaultFirstName, defaultLastName])
@@ -226,14 +246,14 @@ def test_newUserInvalidExisting(monkeypatch, capsys):
 
   for testUsername in testUsernames:
 
-    prompts = iter([{0: 'To Create an Account'}, {0: 'Log out'}])
+    prompts = iter([{0: 'To Create an Account'}, {0: 'Log out'}, {0: 'Exit'}])
     monkeypatch.setattr('main.prompt', lambda _: next(prompts))
 
     inputs = iter([testUsername, defaultPassword, defaultFirstName, defaultLastName, defaultUser, defaultPassword, defaultFirstName, defaultLastName])
     monkeypatch.setattr('builtins.input', lambda _: next(inputs))
 
     main()
-    assert capsys.readouterr().out.split('\n')[-2] == "Logging out."
+    assert capsys.readouterr().out.split('\n')[-3] == "Thank you, bye!"
     assert open("Users.txt", "r").read() == users + f"{str(i)},{defaultUser},{defaultPassword},{defaultFirstName},{defaultLastName}\n"
     file = open("Users.txt", "w")
     file.write(users)
@@ -250,7 +270,7 @@ def test_newUserExceedsLimit(monkeypatch, capsys):
       file.write(f"{i},{defaultUser}{i},{defaultPassword},{defaultFirstName},{defaultLastName}\n")
 
   # create the 6th account
-  prompts = iter([{0: 'To Create an Account'}, {0: 'For Existing Users'}, {0: 'Log out'}])
+  prompts = iter([{0: 'To Create an Account'}, {0: 'For Existing Users'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr('main.prompt', lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword])
@@ -289,14 +309,14 @@ def test_loginExistingUser(monkeypatch, capsys):
 
   for testUsernamePassword in testUsernamesPasswords:
 
-    prompts = iter([{0: 'For Existing Users'}, {0: 'Log out'}])
+    prompts = iter([{0: 'For Existing Users'}, {0: 'Log out'}, {0: 'Exit'}])
     monkeypatch.setattr('main.prompt', lambda _: next(prompts))
 
     inputs = iter([testUsernamePassword[0], testUsernamePassword[1], defaultFirstName, defaultLastName])
     monkeypatch.setattr('builtins.input', lambda _: next(inputs))
 
     main()
-    assert capsys.readouterr().out.split('\n')[-2] == "Logging out."
+    assert capsys.readouterr().out.split('\n')[-3] == "Thank you, bye!"
     assert open("Users.txt", "r").read() == users
 
 # tests login attempt with invalid username.
@@ -307,7 +327,7 @@ def test_loginInvalidUsername(monkeypatch, capsys):
 
   for testUsername in testUsernames:
 
-    prompts = iter([{0: 'For Existing Users'}, {0: 'Log out'}])
+    prompts = iter([{0: 'For Existing Users'}, {0: 'Log out'}, {0: 'Exit'}])
     monkeypatch.setattr('main.prompt', lambda _: next(prompts))
 
     inputs = iter([testUsername, defaultPassword, defaultUser, defaultPassword])
@@ -326,7 +346,7 @@ def test_loginInvalidPassword(monkeypatch, capsys):
 
   for testPassword in testPasswords:
 
-    prompts = iter([{0: 'For Existing Users'}, {0: 'Log out'}])
+    prompts = iter([{0: 'For Existing Users'}, {0: 'Log out'}, {0: 'Exit'}])
     monkeypatch.setattr('main.prompt', lambda _: next(prompts))
 
     inputs = iter([defaultUser, "invalidPassword%", defaultUser, defaultPassword])
@@ -341,7 +361,7 @@ def test_loginInvalidPassword(monkeypatch, capsys):
 def test_searchUser(monkeypatch, capsys):
   startTest()
 
-  prompts = iter([{0: 'For Existing Users'}, {0: 'Find someone you know'}, {0: 'Log out'}])
+  prompts = iter([{0: 'For Existing Users'}, {0: 'Find someone you know'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr('main.prompt', lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword, defaultFirstName, defaultLastName])
@@ -359,7 +379,7 @@ def test_searchInvalidUser(monkeypatch, capsys):
 
   for testName in testNames:
 
-    prompts = iter([{0: 'For Existing Users'}, {0: 'Find someone you know'}, {0: 'Log out'}])
+    prompts = iter([{0: 'For Existing Users'}, {0: 'Find someone you know'}, {0: 'Log out'}, {0: 'Exit'}])
     monkeypatch.setattr('main.prompt', lambda _: next(prompts))
 
     inputs = iter([defaultUser, defaultPassword, testName[0], testName[1]])
@@ -372,8 +392,9 @@ def test_searchInvalidUser(monkeypatch, capsys):
 # tests the search job feature
 def test_searchJob(monkeypatch, capsys):
   startTest()
+  jobClear()
 
-  prompts = iter([{0: 'For Existing Users'}, {0: 'Search for a Job'}, {0: 'Log out'}])
+  prompts = iter([{0: 'For Existing Users'}, {0: 'Job search/internship'}, {0: 'Search for a Job'}, {0: 'Return to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr('main.prompt', lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword])
@@ -381,7 +402,47 @@ def test_searchJob(monkeypatch, capsys):
 
   main()
 
-  assert capsys.readouterr().out.split('\n')[-2] == "Logging out."
+  assert "under construction." in capsys.readouterr().out
+
+#
+def test_postJob(monkeypatch, capsys):
+  startTest()
+  jobClear()
+
+  prompts = iter([{0: 'For Existing Users'}, {0: 'Job search/internship'}, {0: 'Post a Job'}, {0: 'Return to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
+  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+
+  inputs = iter([defaultUser, defaultPassword, defaultTitle, defaultDescription, defaultEmployer, defaultLocation, defaultSalary])
+  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+  main()
+
+  assert capsys.readouterr().out.split('\n')[-3] == "Thank you, bye!"
+  assert open("Jobs.txt", "r").read() == defaultJobString
+
+#
+def test_postJobExceedsLimit(monkeypatch, capsys):
+  startTest()
+  jobClear()
+
+  jobs = ""
+
+  with open("Jobs.txt", "w") as file:
+    for i in range(1,maxJobs+1):
+      # file.write(f"{defaultUser},{defaultPassword},{defaultFirstName},{defaultLastName},{defaultTitle},{defaultDescription},{defaultEmployer},{defaultLocation},${'{:,.2f}'.format(float(defaultSalary))}\n")
+      jobs += defaultJobString
+    file.write(jobs)
+
+  prompts = iter([{0: 'For Existing Users'}, {0: 'Job search/internship'}, {0: 'Post a Job'}, {0: 'Return to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
+  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+
+  inputs = iter([defaultUser, defaultPassword])
+  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+  main()
+
+  assert "You have reached the maximum number of job postings." in capsys.readouterr().out
+  assert open("Jobs.txt", "r").read() == jobs
 
 # tests the search skill feature
 def test_searchSkill(monkeypatch, capsys):
@@ -391,7 +452,7 @@ def test_searchSkill(monkeypatch, capsys):
 
   for skill in skills:
 
-    prompts = iter([{0: 'For Existing Users'}, {0: 'Learn a new skill'}, {0: skill}, {0: 'Return to the main menu'}, {0: 'Log out'}])
+    prompts = iter([{0: 'For Existing Users'}, {0: 'Learn a new skill'}, {0: skill}, {0: 'Return to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
     monkeypatch.setattr('main.prompt', lambda _: next(prompts))
 
     inputs = iter([defaultUser, defaultPassword])
@@ -399,11 +460,12 @@ def test_searchSkill(monkeypatch, capsys):
 
     main()
 
-    assert capsys.readouterr().out.split('\n')[-2] == "Logging out."
+    assert capsys.readouterr().out.split('\n')[-3] == "Thank you, bye!"
 
 # workaround for pytest terminating after the last test function; userPaste needs to be called to recover the original data in Users.txt
 
 def test_dummy():
   userPaste()
+  jobPaste()
 
 # this has to be the last test in the file!
