@@ -5,12 +5,31 @@ from InquirerPy import prompt
 # Definitions of Function
 ##################################################
 
+def getName(userID):
+  file = open("Users.txt", "r")
+  users = file.read().split('\n')
+  i = 0
+  for user in users:
+    users[i] = user.split(',')
+    i += 1
+  file.close()
+
+  i = 0
+  
+  for user in users:
+    if user[1] == userID:
+      break
+    i += 1
+
+  return user[3], user[4]
+
+
 def addJob(jobsList, userID):
     """
     Allows a logged-in user to post a job.
     """
     if len(jobsList) >= 5:
-        print("You have reached the maximum limit of job postings (5).")
+        print("You have reached the maximum number of job postings.")
         return
 
     print("\n============================\n")
@@ -18,9 +37,17 @@ def addJob(jobsList, userID):
     description = input("Please enter the job description: ")
     employer = input("Please enter the employer: ")
     location = input("Please enter the location: ")
-    salary = input("Please enter the salary: ")
+    while True:
+      try:
+        salary = f"${'{:,.2f}'.format(float(input('Please enter the salary: ')))}"
+      except:
+        print("\nPlease enter a number.\n")
+        continue
+      break
 
-    jobsList.append((userID, title, description, employer, location, salary))
+    firstName, lastName = getName(userID)
+
+    jobsList.append((firstName, lastName, title, description, employer, location, salary))
     saveJobs(jobsList)
     print("\nJob posted successfully!")
 
@@ -100,7 +127,7 @@ def UniqueUser(existingUsersList, UserID, password):
   return True
 
 
-def createUser(UserCount, existingUsersList):
+def createUser(UserCount, existingUsersList, jobsList):
   """
    Registers a new user, provided the UserID is unique and the 
    password meets the requirements.
@@ -156,14 +183,14 @@ def mainMenu(existingUsersList, jobsList, userID):
               choice = prompt({
                     "type": "list", 
                     "message" : "Select one:",
-                    "choices": ["Search for a job", "Post a job", "Return to the main menu"]
+                    "choices": ["Search for a Job", "Post a Job", "Return to the main menu"]
               })
 
               match choice[0]:
-                case "Search for a job":
+                case "Search for a Job":
                   print("\nunder construction.\n")
 
-                case "Post a job":
+                case "Post a Job":
                   addJob(jobsList, userID)
 
                 case "Return to the main menu":
@@ -265,8 +292,8 @@ def main():
   try:
       with open(jobsFilename, "r") as jobsFile:
           for line in jobsFile:
-              user_id, title, description, employer, location, salary = line.strip().split(',')
-              jobsList.append((user_id, title, description, employer, location, salary))
+              firstName, lastName, title, description, employer, location, salary = line.strip().split(',')
+              jobsList.append((firstName, lastName, title, description, employer, location, salary))
   except FileNotFoundError:
       pass  # If the file doesn't exist, start with an empty jobs list
 
@@ -295,7 +322,7 @@ def main():
             )
           else:
             UserCount += 1
-            createUser(UserCount, existingUsersList)
+            createUser(UserCount, existingUsersList, jobsList)
     
         case "To Find an Existing User":
           # Call the searchExistingUsers function
