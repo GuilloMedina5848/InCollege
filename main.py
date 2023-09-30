@@ -78,7 +78,7 @@ def printJobs(jobsList):
             print(f"Salary: {salary}")
             print("\n------------------------\n")
 
-def existingUser(existingUsersList):
+def existingUser(existingUsersList, loggedIn):
   """
   allow existing user to log in
   """
@@ -90,6 +90,7 @@ def existingUser(existingUsersList):
       if line[1] == existingUserID and line[2] == existingPassword:
         print(
             f"\nWelcome, {existingUserID}. You have successfully logged in.\n")
+        loggedIn = True
         run = False
         return existingUserID
 
@@ -127,7 +128,7 @@ def UniqueUser(existingUsersList, UserID, password):
   return True
 
 
-def createUser(UserCount, existingUsersList, jobsList):
+def createUser(UserCount, existingUsersList, jobsList, loggedIn):
   """
    Registers a new user, provided the UserID is unique and the 
    password meets the requirements.
@@ -152,15 +153,16 @@ def createUser(UserCount, existingUsersList, jobsList):
       print("\n============================\n")
       print("Thank you for creating an account.")
       print(f"\nWelcome, {userID}. You have successfully logged in.\n")
+      loggedIn = True
       run = False
-      mainMenu(existingUsersList, jobsList, userID)  # Call the main menu function for logged-in users
+      mainMenu(UserCount, existingUsersList, jobsList, userID)  # Call the main menu function for logged-in users
     else:
       print(
           "\nYour username is already taken or the password doesn't meet requirements. Please start over\n"
       )
 
 
-def mainMenu(existingUsersList, jobsList, userID):
+def mainMenu(UserCount, existingUsersList, jobsList, userID):
   """
    Displays the main menu to the user after they log in.
   """
@@ -169,7 +171,12 @@ def mainMenu(existingUsersList, jobsList, userID):
       choice = prompt({
                     "type": "list",
                     "message" : "Main Menu:",
-                    "choices": ["Find someone you know", "Job search/internship", "Learn a new skill", "Log out"]
+                    "choices": ["Find someone you know", 
+                                "Job search/internship", 
+                                "Learn a new skill",
+                                "Useful Links", 
+                                "InCollege Important Links",
+                                "Log out"]
       })
       
       match choice[0]:
@@ -236,7 +243,11 @@ def mainMenu(existingUsersList, jobsList, userID):
             
             except ValueError:              
               print("Invalid choice. Please enter a valid option.")
-        
+        case "Useful Links":
+            usefulLinks(UserCount, existingUsersList, jobsList, loggedIn = True)
+
+        case "InCollege Important Links":
+            importantLinks() 
         case "Log out":
           print("Logging out.\n")
           break
@@ -263,7 +274,136 @@ def searchExistingUsers(existingUsersList):
     if not found:
         print("\nThey are not yet a part of the InCollege system yet.\n")
 
+def signIn(UserCount, existingUsersList, jobsList, loggedIn): 
+  userID = existingUser(existingUsersList, loggedIn)
+  mainMenu(UserCount, existingUsersList, jobsList, userID)  # Call the main menu function for logged-in users
 
+def signUp(UserCount, existingUsersList, jobsList, loggedIn):
+  if UserCount >= 5:
+    print(
+      "\nAll permitted accounts have been created, please come back later\n"
+    )
+  else:
+    UserCount += 1
+    createUser(UserCount, existingUsersList, jobsList, loggedIn)
+  
+def usefulLinks(UserCount, existingUsersList, jobsList, loggedIn):
+    """
+    Useful Links option
+    """
+    run = True
+    while run:
+      try:
+      # Ask for user input
+        choice = prompt({
+                    "type": "list",
+                    "message" : "Useful Links",
+                    "choices": ["General", 
+                                "Browse InCollege", 
+                                "Business Solutions", 
+                                "Directories", 
+                                "Back to Main Menu"]
+        })
+        match choice[0]:
+          case "General":
+            generalLinks(UserCount, existingUsersList, jobsList, loggedIn)
+          case "Browse InCollege":
+            print("\nUnder construction.\n")
+          case "Business Solutions":
+            print("\nUnder construction.\n")
+          case "Directories":
+            print("\nUnder construction.\n")
+          case "Back to Main Menu":
+            run = False
+            break
+          case __:    # <--- Else
+            raise ValueError
+      except ValueError:
+        print("Choice not found, please try again.\n")  
+
+def generalLinks(UserCount, existingUsersList, jobsList, loggedIn):
+    """
+    "General" option under "Useful Links"
+    """
+    run = True
+    while run:
+        try:
+            # Ask for user input
+            choice = prompt({
+                "type": "list",
+                "message": "General",
+                "choices": [
+                    "Sign Up",
+                    "Help Center",
+                    "About",
+                    "Press",
+                    "Blog",
+                    "Careers",
+                    "Developers",
+                    "Back to Useful Links"
+                ]
+            })
+
+            match choice[0]:
+                case "Sign Up":
+                    if loggedIn:
+                      print("\nYou are already logged in!\n")
+                    else:
+                      signInOrUp(UserCount, existingUsersList, jobsList, loggedIn)
+                case "Help Center":
+                    print("\nWe're here to help.\n")
+                case "About":
+                    print("\nIn College: Welcome to In College, the world's largest college student network with many users in many countries and territories worldwide.\n")
+                case "Press":
+                    print("\nIn College Pressroom: Stay on top of the latest news, updates, and reports.\n")
+                case "Blog":
+                    print("\nUnder construction.\n")
+                case "Careers":
+                    print("\nUnder construction.\n")
+                case "Developers":
+                    print("\nUnder construction.\n")
+                case "Back to Useful Links":
+                    run = False
+                    break
+                case __:  # <--- Else
+                    raise ValueError
+        except ValueError:
+            print("Choice not found, please try again.\n")
+
+def signInOrUp(UserCount, existingUsersList, jobsList, loggedIn):
+    """
+    "Sign Up" Option under "General" under "Useful Link"
+    This gives not logged-in user 3 choices to either sign in, sign up, or back
+    """           
+    run = True
+    while run:
+        try:
+            # Ask for user input
+            choice = prompt({
+                "type": "list",
+                "message": "General",
+                "choices": [
+                    "For Existing User",
+                    "To Create an Account",
+                    "Back to General"
+                ]
+            })
+
+            match choice[0]:
+                case "For Existing User":
+                    signIn(UserCount, existingUsersList, jobsList, loggedIn)
+                case "To Create an Account":
+                    signUp(UserCount, existingUsersList, jobsList, loggedIn)
+                case "Back to General":
+                    run = False
+                    break
+                case __:  # <--- Else
+                    raise ValueError
+        except ValueError:
+            print("Choice not found, please try again.\n") 
+
+def importantLinks():
+   pass #Still needs to be implemented              
 ################################################
 # Main
 ##################################################
@@ -278,6 +418,7 @@ def main():
   # storing information from the file to a tuple:
   filename = "Users.txt"
   UserCount = 0
+  loggedIn = False #check if user is logged in
   with open(filename, "r") as file:
     for line in file:  # reading each line
       userIndex, stored_username, stored_password, first, last = line.strip().split(
@@ -307,22 +448,19 @@ def main():
       choice = prompt({
                   "type": "list",
                   "message" : "Login page",
-                  "choices": ["Learn why you should join InCollege", "For Existing Users", "To Create an Account", "To Find an Existing User", "Exit"]
+                  "choices": ["Learn why you should join InCollege", 
+                              "For Existing Users", 
+                              "To Create an Account", 
+                              "To Find an Existing User",
+                              "Useful Links",
+                              "InCollege Important Links",
+                              "Exit"]
       })
       match choice[0]:
         case "For Existing Users":
-          userID = existingUser(existingUsersList)
-          mainMenu(existingUsersList, jobsList, userID)  # Call the main menu function for logged-in users
-    
+          signIn(UserCount, existingUsersList, jobsList, loggedIn)
         case "To Create an Account":
-          # if statement to check if there are too many users:
-          if UserCount >= 5:
-            print(
-                "\nAll permitted accounts have been created, please come back later\n"
-            )
-          else:
-            UserCount += 1
-            createUser(UserCount, existingUsersList, jobsList)
+          signUp(UserCount, existingUsersList, jobsList, loggedIn)
     
         case "To Find an Existing User":
           # Call the searchExistingUsers function
@@ -331,6 +469,12 @@ def main():
         case "Learn why you should join InCollege":
           print(            "\n============================\n============================\n====Video is now playing====\n============================\n============================\n"
                )
+          
+        case "Useful Links":
+            usefulLinks(UserCount, existingUsersList, jobsList, loggedIn)
+
+        case "InCollege Important Links":
+            importantLinks()
           
         case "Exit":
           print("Thank you, bye!\n")
