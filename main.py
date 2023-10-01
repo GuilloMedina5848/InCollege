@@ -89,7 +89,7 @@ def existingUser(existingUsersList, loggedIn):
     for line in existingUsersList:
       if line[1] == existingUserID and line[2] == existingPassword:
         print(
-            f"\nWelcome, {existingUserID}. You have successfully logged in.\n")
+            f"\nWelcome, {existingUserID}. You have successfully logged in.")
         loggedIn = True
         run = False
         return existingUserID
@@ -128,7 +128,7 @@ def UniqueUser(existingUsersList, UserID, password):
   return True
 
 
-def createUser(UserCount, existingUsersList, jobsList, loggedIn):
+def createUser(UserCount, existingUsersList, jobsList, loggedIn, Email, SMS, Ads):
   """
    Registers a new user, provided the UserID is unique and the 
    password meets the requirements.
@@ -155,17 +155,41 @@ def createUser(UserCount, existingUsersList, jobsList, loggedIn):
       print(f"\nWelcome, {userID}. You have successfully logged in.\n")
       loggedIn = True
       run = False
-      mainMenu(UserCount, existingUsersList, jobsList, userID)  # Call the main menu function for logged-in users
+      mainMenu(UserCount, existingUsersList, jobsList, userID, loggedIn, Email, SMS, Ads)  # Call the main menu function for logged-in users
     else:
       print(
           "\nYour username is already taken or the password doesn't meet requirements. Please start over\n"
       )
 
 
-def mainMenu(UserCount, existingUsersList, jobsList, userID):
+def mainMenu(UserCount, existingUsersList, jobsList, userID, loggedIn, Email, SMS, Ads):
   """
    Displays the main menu to the user after they log in.
   """
+  #Display current language
+  languageFile = open("Language.txt", "r+") 
+  currentLanguage = languageFile.read()
+  languageFile.close()
+  print("Current language: " + currentLanguage)
+  #Display preferences
+  if Email == True:
+    PEmails = "ON"
+  elif Email == False:
+    PEmails = "OFF"
+  
+  if SMS == True:
+    PSMS = "ON"
+  elif SMS == False:
+    PSMS = "OFF"
+  
+  if Ads == True:
+    PAds = "ON"
+  elif Ads == False:
+    Pads = "OFF"
+    
+  print("Current preferences (Emails: " + PEmails + ", SMS: " + PSMS + ", Advertising: " + PAds + ")")
+
+  loggedIn = True
   while True:
     try: 
       choice = prompt({
@@ -190,7 +214,7 @@ def mainMenu(UserCount, existingUsersList, jobsList, userID):
               choice = prompt({
                     "type": "list", 
                     "message" : "Select one:",
-                    "choices": ["Search for a Job", "Post a Job", "Return to the main menu"]
+                    "choices": ["Search for a Job", "Post a Job", "Back to the main menu"]
               })
 
               match choice[0]:
@@ -200,7 +224,7 @@ def mainMenu(UserCount, existingUsersList, jobsList, userID):
                 case "Post a Job":
                   addJob(jobsList, userID)
 
-                case "Return to the main menu":
+                case "Back to the main menu":
                   break
                     
                 case __:    # <--- Else
@@ -216,7 +240,7 @@ def mainMenu(UserCount, existingUsersList, jobsList, userID):
               choice = prompt({
                     "type": "list",
                     "message" : "Skills Available:",
-                    "choices": ["Team Work", "Clean Code", "Customer Service", "Marketing", "Management", "Return to the main menu"]
+                    "choices": ["Team Work", "Clean Code", "Customer Service", "Marketing", "Management", "Back to the main menu"]
               })
               
               match choice[0]:
@@ -235,7 +259,7 @@ def mainMenu(UserCount, existingUsersList, jobsList, userID):
                 case "Management":
                   print("\nunder construction.\n")
             
-                case "Return to the main menu":
+                case "Back to the main menu":
                   break
                   
                 case __:    # <--- Else
@@ -243,14 +267,16 @@ def mainMenu(UserCount, existingUsersList, jobsList, userID):
             
             except ValueError:              
               print("Invalid choice. Please enter a valid option.")
+              
         case "Useful Links":
-            usefulLinks(UserCount, existingUsersList, jobsList, loggedIn = True)
+            usefulLinks(UserCount, existingUsersList, jobsList, loggedIn)
 
         case "InCollege Important Links":
-            importantLinks() 
+            importantLinks(loggedIn, Email, SMS, Ads) 
+
         case "Log out":
-          print("Logging out.\n")
-          break
+            print("\nLogging out.\n")
+            break
     
         case __:    # <--- Else
               raise ValueError
@@ -274,9 +300,9 @@ def searchExistingUsers(existingUsersList):
     if not found:
         print("\nThey are not yet a part of the InCollege system yet.\n")
 
-def signIn(UserCount, existingUsersList, jobsList, loggedIn): 
+def signIn(UserCount, existingUsersList, jobsList, loggedIn, Email, SMS, Ads): 
   userID = existingUser(existingUsersList, loggedIn)
-  mainMenu(UserCount, existingUsersList, jobsList, userID)  # Call the main menu function for logged-in users
+  mainMenu(UserCount, existingUsersList, jobsList, userID, loggedIn, Email, SMS, Ads)  # Call the main menu function for logged-in users
 
 def signUp(UserCount, existingUsersList, jobsList, loggedIn):
   if UserCount >= 5:
@@ -285,7 +311,7 @@ def signUp(UserCount, existingUsersList, jobsList, loggedIn):
     )
   else:
     UserCount += 1
-    createUser(UserCount, existingUsersList, jobsList, loggedIn)
+    createUser(UserCount, existingUsersList, jobsList, loggedIn, Email, SMS, Ads)
   
 def usefulLinks(UserCount, existingUsersList, jobsList, loggedIn):
     """
@@ -294,7 +320,7 @@ def usefulLinks(UserCount, existingUsersList, jobsList, loggedIn):
     run = True
     while run:
       try:
-      # Ask for user input
+        # Ask for user input
         choice = prompt({
                     "type": "list",
                     "message" : "Useful Links",
@@ -391,28 +417,210 @@ def signInOrUp(UserCount, existingUsersList, jobsList, loggedIn):
 
             match choice[0]:
                 case "For Existing User":
-                    signIn(UserCount, existingUsersList, jobsList, loggedIn)
+                    signIn(UserCount, existingUsersList, jobsList, loggedIn, Email, SMS, Ads)
+
                 case "To Create an Account":
-                    signUp(UserCount, existingUsersList, jobsList, loggedIn)
+                    signUp(UserCount, existingUsersList, jobsList, loggedIn, Email, SMS, Ads)
+
                 case "Back to General":
                     run = False
                     break
+                    
                 case __:  # <--- Else
                     raise ValueError
+
         except ValueError:
             print("Choice not found, please try again.\n") 
 
-def importantLinks():
-   pass #Still needs to be implemented              
+def importantLinks(loggedIn, Email, SMS, Ads):
+   """
+   Important Links option
+   """
+   while True:
+      try:
+        # Ask for user input
+        choice = prompt({
+                    "type": "list",
+                    "message" : "Important Links",
+                    "choices": ["A Copyright Notice",
+                                "About",
+                                "Accessibility", 
+                                "User Agreement", 
+                                "Privacy Policy", 
+                                "Cookie Policy", 
+                                "Copyright Policy", 
+                                "Brand Policy", 
+                                "Guest Controls", 
+                                "Languages",
+                                "Back to Main Menu"]
+        })
+        match choice[0]:
+          case "A Copyright Notice":
+            print("\n© 2023 InCollege\n")
+
+          case "About":
+            print("\nIn College: Welcome to In College, the world's largest college student network with many users in many countries and territories worldwide.\n")
+
+          case "Accessibility":
+            print("\nInCollege is designed with navigation, readability, and usability, which benefits all users. By adding alt text to images and ensuring a logical content structure we have achieved to be ADA compliant and all users including those with disabilities can enjoy our services.\n")
+
+          case "User Agreement":
+            print("\nDisclaimer: By using InCollege you agree to everything our policies say, including data being collected from you, the use of cookies on your computer, and copyright law applicable to you, among others. Please check our Privacy, Cookie, Copyright, and Brand policies for more detailed information.\n")
+
+          case "Privacy Policy":
+            print("\nThis Website collects some Personal Data from its Users. Among the types of Personal Data that this Website collects, by itself or through third parties, there are: email address; password; first name; last name; among various types of Data. The Owner takes appropriate security measures to prevent unauthorized access, disclosure, modification, or unauthorized destruction of the Data.\n")
+            if loggedIn == False:
+              print("\nYou need to be loggedIn to acess guest controls.\n")
+            else:
+              guestControls(Email, SMS, Ads)
+
+          case "Cookie Policy":
+            print("\nCookies are small data files that are placed on your computer or mobile device when you visit a website. Cookies are widely used by website owners in order to make their websites work, or to work more efficiently, as well as to provide reporting information. Cookies help us deliver our services, by using our services, you agree to our use of cookies in your computer.\n")
+
+          case "Copyright Policy":
+            print("\nExcept as permitted by the copyright law applicable to you, you may not reproduce or communicate any of the content on this website, including files downloadable from this website, without the permission of the copyright owner.\n")
+
+          case "Brand Policy":
+            print("\nUnder construction.\n")
+
+          case "Guest Controls":
+            if loggedIn == False:
+              print("\nYou need to be loggedIn to acess guest controls.\n")
+            else:
+              guestControls(Email, SMS, Ads)
+
+          case "Languages":
+            if loggedIn == False:
+              print("\nYou need to be loggedIn to change the language.\n")
+            else:
+              changeLanguage()
+
+          case "Back to Main Menu":
+            break
+
+          case __:  # <--- Else
+            raise ValueError
+
+      except ValueError:
+            print("Choice not found, please try again.\n")
+
+def guestControls(Email, SMS, Ads):
+  while True:
+    try:
+      # Ask for user input
+      choice = prompt({ "type": "list",
+                        "message" : "Guest Controls",
+                        "choices": ["Email",
+                                    "SMS",
+                                    "Advertising",
+                                    "Back to Important Links"]
+          })
+
+      match choice[0]:
+          case "Email":
+            Email = input("\nDo you want to receive InCollege emails? Type yes or no.\n").lower()
+
+            if Email == "yes":
+              print("\nYou will keep receiving InCollege emails\n")
+              Email = True
+            elif Email == "no":
+              print("\nYou will stop receiving InCollege emails\n")
+              Email = False
+            else: 
+              print("\nPlease type yes or no\n")
+
+          case "SMS":
+            SMS = input("\nDo you want to receive InCollege SMS's? Type yes or no.\n").lower()
+
+            if SMS == "yes":
+              print("\nYou will keep receiving InCollege SMS's\n")
+              SMS = True
+            elif SMS == "no":
+              print("\nYou will stop receiving InCollege SMS's\n")
+              SMS = False
+            else: 
+              print("\nPlease type yes or no\n")
+
+          case "Advertising":
+            Ads = input("\nDo you want to receive InCollege advertising? Type yes or no.\n").lower()
+
+            if Ads == "yes":
+              print("\nYou will keep receiving InCollege advertising\n")
+              Ads = True
+            elif Ads == "no":
+              print("\nYou will stop receiving InCollege advertising\n")
+              Ads = False
+            else: 
+              print("\nPlease type yes or no\n")
+
+          case "Back to Important Links":
+            break
+
+          case __:  # <--- Else
+            raise ValueError
+
+    except ValueError:
+        print("Choice not found, please try again.\n")
+
+def changeLanguage():
+  file = open("Language.txt", "r+")
+  currentLanguage = file.read()
+  print("\nCurrent Language: " + currentLanguage + "\n")
+
+  while True:
+      try:
+          # Ask for user input
+          choice = prompt({
+            "type": "list",
+            "message" : "Languages",
+            "choices": ["English",
+                        "Spanish",
+                        "Back to Important Links"]
+          })
+
+          match choice[0]:
+            case "English":
+              if currentLanguage == "English":
+                print("\nCurrent Language is already in English\n")
+              else:
+                print("\nLanguage changed to English\n")
+                file.truncate(0) #Erases the contents of file
+                file.seek(0)
+                file.write("English")
+                currentLanguage = file.read()
+                file.close() #saves file and closes it
+
+            case "Spanish":
+              if currentLanguage == "Spanish":
+                print("\nCurrent Language is already in Spanish\n")
+              else:
+                print("\nLanguage changed to Spanish\n")
+                file.truncate(0) #Erases the contents of file
+                file.seek(0)
+                file.write("Spanish")
+                currentLanguage = file.read()
+                file.close() #saves file and closes it
+
+            case "Back to Important Links":
+              break
+
+            case __:  # <--- Else
+              raise ValueError
+
+      except ValueError:
+          print("Choice not found, please try again.\n")
+
 ################################################
 # Main
 ##################################################
 def main():
   print("\n Welcome to InCollege!")
-  print("\n============================\n")
+  Email, SMS, Ads = True, True, True
+  PEmails, PSMS, Pads = "ON", "ON", "ON"
+  print("\n======================================\n")
   print("Steven's story:\n")
   print("When I first started college during my freshman year I was very shy and didn’t really have many close friends or connections to other people besides my small circle of friends. On top of that, I was looking for a part-time job to help my parents pay my tuition for college, the problem was that I didn’t really had a resume to boast about or any real work history, so no working professional really wanted to talk to me. That same freshman year a professor introduced us to inCollege during a class and I tried it out of curiosity, it made all the difference. inCollege allowed me to connect with other college students at other universities who were in my major and talk about school, jobs, and projects. Being online meant that even if I was shy I was still able to create relationships with real people from outside my small circle of friends and expand my connections. Having a connection made all the difference when talking to people about job, salaries, and offers. inCollege understands that everyone's looking for a first job and will provide the tools that they need in order to be successful. Not only was I able to find a part-time job during my college years, but it even landed me a job I was not expecting. One of my friends I made during inCollege got the job first and after working there for a while referred me to his boss, I already had a position at a well-recognized company before I even graduated! By the time I transitioned to LinkedIn I had more experiences I could use on my resume. My time using inCollege really made all the difference for me and sure it will help you too. Whether it is creating an identity on inCollege, creating connections with other students from other universities, or accessing job information, inCollege will help provide you the tools you need.")
-  print("\n============================\n")
+  print("\n======================================\n")
   # initializing a list of tuples to store existing users:
   existingUsersList = []  # tuple = (index, userID, password)
   # storing information from the file to a tuple:
@@ -438,7 +646,6 @@ def main():
   except FileNotFoundError:
       pass  # If the file doesn't exist, start with an empty jobs list
 
-
   # variable so that loops run until we tell it to stop
   run = True
   # loop that runs infinitely if given the wrong choice
@@ -458,7 +665,7 @@ def main():
       })
       match choice[0]:
         case "For Existing Users":
-          signIn(UserCount, existingUsersList, jobsList, loggedIn)
+          signIn(UserCount, existingUsersList, jobsList, loggedIn, Email, SMS, Ads)
         case "To Create an Account":
           signUp(UserCount, existingUsersList, jobsList, loggedIn)
     
@@ -474,7 +681,7 @@ def main():
             usefulLinks(UserCount, existingUsersList, jobsList, loggedIn)
 
         case "InCollege Important Links":
-            importantLinks()
+            importantLinks(loggedIn, Email, SMS, Ads)
           
         case "Exit":
           print("Thank you, bye!\n")
@@ -485,7 +692,6 @@ def main():
     
     except ValueError:
             print("Choice not found, please try again.\n")
-      
 
 if __name__ == "__main__":
   main()
