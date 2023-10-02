@@ -304,7 +304,7 @@ def signIn(UserCount, existingUsersList, jobsList, loggedIn, Email, SMS, Ads):
   userID = existingUser(existingUsersList, loggedIn)
   mainMenu(UserCount, existingUsersList, jobsList, userID, loggedIn, Email, SMS, Ads)  # Call the main menu function for logged-in users
 
-def signUp(UserCount, existingUsersList, jobsList, loggedIn):
+def signUp(UserCount, existingUsersList, jobsList, loggedIn, Email, SMS, Ads):
   if UserCount >= 5:
     print(
       "\nAll permitted accounts have been created, please come back later\n"
@@ -667,7 +667,7 @@ def main():
         case "For Existing Users":
           signIn(UserCount, existingUsersList, jobsList, loggedIn, Email, SMS, Ads)
         case "To Create an Account":
-          signUp(UserCount, existingUsersList, jobsList, loggedIn)
+          signUp(UserCount, existingUsersList, jobsList, loggedIn, Email, SMS, Ads)
     
         case "To Find an Existing User":
           # Call the searchExistingUsers function
