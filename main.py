@@ -470,7 +470,7 @@ def importantLinks(loggedIn, Email, SMS, Ads):
           case "Privacy Policy":
             print("\nThis Website collects some Personal Data from its Users. Among the types of Personal Data that this Website collects, by itself or through third parties, there are: email address; password; first name; last name; among various types of Data. The Owner takes appropriate security measures to prevent unauthorized access, disclosure, modification, or unauthorized destruction of the Data.\n")
             if loggedIn == False:
-              print("\nYou need to be loggedIn to acess guest controls.\n")
+              print("\nYou need to be loggedIn to access guest controls.\n")
             else:
               guestControls(Email, SMS, Ads)
 

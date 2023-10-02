@@ -394,7 +394,7 @@ def test_searchJob(monkeypatch, capsys):
   startTest()
   jobClear()
 
-  prompts = iter([{0: 'For Existing Users'}, {0: 'Job search/internship'}, {0: 'Search for a Job'}, {0: 'Return to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
+  prompts = iter([{0: 'For Existing Users'}, {0: 'Job search/internship'}, {0: 'Search for a Job'}, {0: 'Back to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr('main.prompt', lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword])
@@ -409,7 +409,7 @@ def test_postJob(monkeypatch, capsys):
   startTest()
   jobClear()
 
-  prompts = iter([{0: 'For Existing Users'}, {0: 'Job search/internship'}, {0: 'Post a Job'}, {0: 'Return to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
+  prompts = iter([{0: 'For Existing Users'}, {0: 'Job search/internship'}, {0: 'Post a Job'}, {0: 'Back to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr('main.prompt', lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword, defaultTitle, defaultDescription, defaultEmployer, defaultLocation, defaultSalary])
@@ -433,7 +433,7 @@ def test_postJobExceedsLimit(monkeypatch, capsys):
       jobs += defaultJobString
     file.write(jobs)
 
-  prompts = iter([{0: 'For Existing Users'}, {0: 'Job search/internship'}, {0: 'Post a Job'}, {0: 'Return to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
+  prompts = iter([{0: 'For Existing Users'}, {0: 'Job search/internship'}, {0: 'Post a Job'}, {0: 'Back to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr('main.prompt', lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword])
@@ -452,7 +452,7 @@ def test_searchSkill(monkeypatch, capsys):
 
   for skill in skills:
 
-    prompts = iter([{0: 'For Existing Users'}, {0: 'Learn a new skill'}, {0: skill}, {0: 'Return to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
+    prompts = iter([{0: 'For Existing Users'}, {0: 'Learn a new skill'}, {0: skill}, {0: 'Back to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
     monkeypatch.setattr('main.prompt', lambda _: next(prompts))
 
     inputs = iter([defaultUser, defaultPassword])
@@ -463,6 +463,86 @@ def test_searchSkill(monkeypatch, capsys):
     assert capsys.readouterr().out.split('\n')[-3] == "Thank you, bye!"
 
 # workaround for pytest terminating after the last test function; userPaste needs to be called to recover the original data in Users.txt
+
+def test_copyrightNotice(monkeypatch, capsys):
+  startTest()
+
+  prompts = iter([{0: 'InCollege Important Links'}, {0: 'A Copyright Notice'}, {0: 'Back to Main Menu'}, {0: 'Exit'}])
+  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+
+  main()
+
+  assert "2023 InCollege" in capsys.readouterr().out
+
+def test_about(monkeypatch, capsys):
+  startTest()
+
+  prompts = iter([{0: 'InCollege Important Links'}, {0: 'About'}, {0: 'Back to Main Menu'}, {0: 'Exit'}])
+  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+
+  main()
+
+  assert "Welcome to In College, the world's largest college student network with many users in many countries and territories worldwide." in capsys.readouterr().out
+
+def test_userAgreement(monkeypatch, capsys):
+  startTest()
+
+  prompts = iter([{0: 'InCollege Important Links'}, {0: 'User Agreement'}, {0: 'Back to Main Menu'}, {0: 'Exit'}])
+  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+
+  main()
+
+  assert "Disclaimer: By using InCollege you agree to everything our policies say, including data being collected from you, the use of cookies on your computer, and copyright law applicable to you, among others. Please check our Privacy, Cookie, Copyright, and Brand policies for more detailed information." in capsys.readouterr().out
+
+def test_accessibility(monkeypatch, capsys):
+  startTest()
+
+  prompts = iter([{0: 'InCollege Important Links'}, {0: 'Accessibility'}, {0: 'Back to Main Menu'}, {0: 'Exit'}])
+  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+
+  main()
+
+  assert "InCollege is designed with navigation, readability, and usability, which benefits all users. By adding alt text to images and ensuring a logical content structure we have achieved to be ADA compliant and all users including those with disabilities can enjoy our services." in capsys.readouterr().out
+
+
+def test_privacyPolicy(monkeypatch, capsys):
+  userClear()
+
+  testUsernamesPasswords = ["pyTestUser", "pytest123%"]
+
+  users = ""
+  i = 1
+
+  for testUsernamePassword in testUsernamesPasswords:
+    users += f"{str(i)},{testUsernamePassword[0]},{testUsernamePassword[1]},{defaultFirstName},{defaultLastName}\n"
+    i += 1
+
+  file = open("Users.txt", "w")
+  file.write(users)
+  file.close()
+
+  for testUsernamePassword in testUsernamesPasswords:
+
+    prompts = iter([{0: 'For Existing Users'}, {0: 'InCollege Important Links'}, {0: 'Privacy Policy'}, {0: 'Back to Important Links'}, {0: 'Back to Main Menu'},{0: 'Log out'}, {0: 'Exit'}])
+    monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+
+    inputs = iter([testUsernamePassword[0], testUsernamePassword[1]])
+    monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+    main()
+    assert "Current preferences (Emails: ON, SMS: ON, Advertising: ON)" in capsys.readouterr().out
+
+
+def test_cookiePolicy(monkeypatch, capsys):
+  startTest()
+
+  prompts = iter([{0: 'InCollege Important Links'}, {0: 'Cookie Policy'}, {0: 'Back to Main Menu'}, {0: 'Exit'}])
+  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+
+  main()
+
+  assert "Cookies are small data files that are placed on your computer or mobile device when you visit a website. Cookies are widely used by website owners in order to make their websites work, or to work more efficiently, as well as to provide reporting information. Cookies help us deliver our services, by using our services, you agree to our use of cookies in your computer." in capsys.readouterr().out
+
 
 def test_dummy():
   userPaste()
