@@ -522,7 +522,7 @@ def importantLinks(loggedIn, Email, SMS, Ads, userID = ""):
             print("\nExcept as permitted by the copyright law applicable to you, you may not reproduce or communicate any of the content on this website, including files downloadable from this website, without the permission of the copyright owner.\n")
 
           case "Brand Policy":
-            print("\nUnder construction.\n")
+            print("\nInCollege understands how hard it is for students looking for a first job and will provide the tools that they need in order to be successful. Our goal is to continuously advance what's possibly in education and connect students from all around the world.\n")
 
           case "Guest Controls":
             if loggedIn == False:
