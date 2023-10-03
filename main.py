@@ -210,28 +210,32 @@ def mainMenu(UserCount, existingUsersList, jobsList, userID, loggedIn, Email, SM
   """
    Displays the main menu to the user after they log in.
   """
-  #Display current language
-  print("Current language: " + Language)
-  #Display preferences
-  if Email == True:
-    PEmails = "ON"
-  elif Email == False:
-    PEmails = "OFF"
-  
-  if SMS == True:
-    PSMS = "ON"
-  elif SMS == False:
-    PSMS = "OFF"
-  
-  if Ads == True:
-    PAds = "ON"
-  elif Ads == False:
-    PAds = "OFF"
-    
-  print("Current preferences (Emails: " + PEmails + ", SMS: " + PSMS + ", Advertising: " + PAds + ")")
-
   loggedIn = True
   while True:
+    #Display current language
+    currentLanguage = getPreference(userID, "Language")
+    print("\nCurrent Language: " + currentLanguage)
+    #Display preferences
+    emailState = getPreference(userID, "Email")
+    smsState = getPreference(userID, "SMS")
+    adsState = getPreference(userID, "Ads")
+
+    if emailState == "True":
+      emailPreference = "ON"
+    elif emailState == "False":
+      emailPreference = "OFF"
+    
+    if smsState == "True":
+      smsPreference = "ON"
+    elif smsState == "False":
+      smsPreference = "OFF"
+    
+    if adsState == "True":
+      adsPreference = "ON"
+    elif adsState == "False":
+      adsPreference = "OFF"
+      
+    print("Current preferences (Emails: " + emailPreference + ", SMS: " + smsPreference + ", Advertising: " + adsPreference + ")")
     try: 
       choice = prompt({
                     "type": "list",
@@ -513,7 +517,7 @@ def importantLinks(loggedIn, Email, SMS, Ads, userID = ""):
             if loggedIn == False:
               print("\nYou need to be logged in to access guest controls.\n")
             else:
-              guestControls(Email, SMS, Ads, userID)
+              guestControls(userID)
 
           case "Cookie Policy":
             print("\nCookies are small data files that are placed on your computer or mobile device when you visit a website. Cookies are widely used by website owners in order to make their websites work, or to work more efficiently, as well as to provide reporting information. Cookies help us deliver our services, by using our services, you agree to our use of cookies in your computer.\n")
@@ -528,7 +532,7 @@ def importantLinks(loggedIn, Email, SMS, Ads, userID = ""):
             if loggedIn == False:
               print("\nYou need to be logged in to access guest controls.\n")
             else:
-              guestControls(Email, SMS, Ads, userID)
+              guestControls(userID)
 
           case "Languages":
             if loggedIn == False:
@@ -545,8 +549,28 @@ def importantLinks(loggedIn, Email, SMS, Ads, userID = ""):
       except ValueError:
             print("Choice not found, please try again.\n")
 
-def guestControls(Email, SMS, Ads, userID):
+def guestControls(userID):
   while True:
+    emailState = getPreference(userID, "Email")
+    smsState = getPreference(userID, "SMS")
+    adsState = getPreference(userID, "Ads")
+
+    if emailState == "True":
+      emailPreference = "ON"
+    elif emailState == "False":
+      emailPreference = "OFF"
+    
+    if smsState == "True":
+      smsPreference = "ON"
+    elif smsState == "False":
+      smsPreference = "OFF"
+    
+    if adsState == "True":
+      adsPreference = "ON"
+    elif adsState == "False":
+      adsPreference = "OFF"
+      
+    print("\nCurrent preferences (Emails: " + emailPreference + ", SMS: " + smsPreference + ", Advertising: " + adsPreference + ")\n")
     try:
       # Ask for user input
       choice = prompt({ "type": "list",
@@ -559,13 +583,13 @@ def guestControls(Email, SMS, Ads, userID):
 
       match choice[0]:
           case "Email":
-            Email = input("\nDo you want to receive InCollege emails? Type yes or no.\n").lower()
+            emailChoice = input("\nDo you want to receive InCollege emails? Type yes or no.\n").lower()
 
-            if Email == "yes":
+            if emailChoice == "yes":
               print("\nYou will keep receiving InCollege emails\n")
               changePreference(userID, "Email", True)
               Email = True
-            elif Email == "no":
+            elif emailChoice == "no":
               print("\nYou will stop receiving InCollege emails\n")
               changePreference(userID, "Email", False)
               Email = False
@@ -573,13 +597,13 @@ def guestControls(Email, SMS, Ads, userID):
               print("\nPlease type yes or no\n")
 
           case "SMS":
-            SMS = input("\nDo you want to receive InCollege SMS's? Type yes or no.\n").lower()
+            SMSChoice = input("\nDo you want to receive InCollege SMS's? Type yes or no.\n").lower()
 
-            if SMS == "yes":
+            if SMSChoice == "yes":
               print("\nYou will keep receiving InCollege SMS's\n")
               changePreference(userID, "SMS", True)
               SMS = True
-            elif SMS == "no":
+            elif SMSChoice == "no":
               print("\nYou will stop receiving InCollege SMS's\n")
               changePreference(userID, "SMS", False)
               SMS = False
@@ -587,13 +611,13 @@ def guestControls(Email, SMS, Ads, userID):
               print("\nPlease type yes or no\n")
 
           case "Advertising":
-            Ads = input("\nDo you want to receive InCollege advertising? Type yes or no.\n").lower()
+            adsChoice = input("\nDo you want to receive InCollege advertising? Type yes or no.\n").lower()
 
-            if Ads == "yes":
+            if adsChoice == "yes":
               print("\nYou will keep receiving InCollege advertising\n")
               changePreference(userID, "Ads", True)
               Ads = True
-            elif Ads == "no":
+            elif adsChoice == "no":
               print("\nYou will stop receiving InCollege advertising\n")
               changePreference(userID, "Ads", False)
               Ads = False
