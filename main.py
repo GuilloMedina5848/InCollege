@@ -92,7 +92,7 @@ def existingUser(existingUsersList):
         SMS = line[6]
         Ads = line[7]
         Language = line[8].strip('\n')
-        return existingUserID, bool(Email), bool(SMS), bool(Ads), Language
+        return existingUserID, Email == 'True', SMS == 'True', Ads == 'True', Language
 
     print("\nIncorrect username / password, please try again\n")
 
@@ -498,7 +498,7 @@ def importantLinks(loggedIn, Email, SMS, Ads, userID = ""):
             print("\n© 2023 InCollege\n")
 
           case "About":
-            print("\nIn College: Welcome to In College, the world's largest college student network with many users in many countries and territories worldwide.\n")
+            print("\nWe're InCollege, a social networking solution made by college students for college students.\n")
 
           case "Accessibility":
             print("\nInCollege is designed with navigation, readability, and usability, which benefits all users. By adding alt text to images and ensuring a logical content structure we have achieved to be ADA compliant and all users including those with disabilities can enjoy our services.\n")
