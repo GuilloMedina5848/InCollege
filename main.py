@@ -81,17 +81,18 @@ def existingUser(existingUsersList):
   """
   allow existing user to log in
   """
-  run = True
-  while run:
+  while True:
     existingUserID = input("Please enter UserID: ")
     existingPassword = input("Please enter password: ")
     for line in existingUsersList:
       if line[1] == existingUserID and line[2] == existingPassword:
         print(
             f"\nWelcome, {existingUserID}. You have successfully logged in.")
-        Email = line[5], SMS = line[6], Ads = line[7], Language = line[8]
-        run = False
-        return existingUserID, Email, SMS, Ads, Language
+        Email = line[5]
+        SMS = line[6]
+        Ads = line[7]
+        Language = line[8].strip('\n')
+        return existingUserID, bool(Email), bool(SMS), bool(Ads), Language
 
     print("\nIncorrect username / password, please try again\n")
 
@@ -191,6 +192,7 @@ def createUser(UserCount, existingUsersList, jobsList, loggedIn):
       )
       addToFile(UserCount, userID,
                 password, first, last, True, True, True, "English")# Save the new user information to the file
+      existingUsersList.append(['UserCount', userID, password, first, last, True, True, True, "English"])
       print("\n============================\n")
       print("Thank you for creating an account.")
       print(f"\nWelcome, {userID}. You have successfully logged in.\n")
@@ -339,7 +341,6 @@ def searchExistingUsers(existingUsersList):
 
 def signIn(UserCount, existingUsersList, jobsList):
   userID, Email, SMS, Ads, Language = existingUser(existingUsersList)
-  print("finished calling existing users")
   mainMenu(UserCount, existingUsersList, jobsList, userID, True, Email, SMS, Ads, Language)  # Call the main menu function for logged-in users
 
 def signUp(UserCount, existingUsersList, jobsList, loggedIn):
