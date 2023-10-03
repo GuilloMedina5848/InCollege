@@ -715,7 +715,7 @@ def test_brandPolicy(monkeypatch, capsys):
 
   main()
 
-  assert "INSERT BRAND POLICY HERE" in capsys.readouterr().out
+  assert "InCollege understands how hard it is for students looking for a first job and will provide the tools that they need in order to be successful. Our goal is to continuously advance what's possibly in education and connect students from all around the world." in capsys.readouterr().out
 
 def test_guestControlEmail(monkeypatch, capsys):
   startTest()
