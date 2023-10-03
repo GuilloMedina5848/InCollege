@@ -9,7 +9,11 @@ defaultUser = "pyTestUser"
 defaultPassword = "pyTest123%"
 defaultFirstName = "pyTest"
 defaultLastName = "User"
-defaultUserString = f"1,{defaultUser},{defaultPassword},{defaultFirstName},{defaultLastName}\n"
+defaultEmailPref = True
+defaultSMSPref = True
+defaultAdsPref = True
+defaultLanguage = "English"
+defaultUserString = f"1,{defaultUser},{defaultPassword},{defaultFirstName},{defaultLastName},{defaultEmailPref},{defaultSMSPref},{defaultAdsPref},{defaultLanguage}\n"
 maxUsers = 5
 
 jobCopy = ""
@@ -174,7 +178,7 @@ def test_newUser(monkeypatch, capsys):
 
     main()
     assert capsys.readouterr().out.split('\n')[-3] == "Thank you, bye!"
-    users += f"{str(i)},{testUsernamePassword[0]},{testUsernamePassword[1]},{defaultFirstName},{defaultLastName}\n"
+    users += f"{str(i)},{testUsernamePassword[0]},{testUsernamePassword[1]},{defaultFirstName},{defaultLastName},{defaultEmailPref},{defaultSMSPref},{defaultAdsPref},{defaultLanguage}\n"
     assert open("Users.txt", "r").read() == users
     i += 1
 
@@ -237,7 +241,7 @@ def test_newUserInvalidExisting(monkeypatch, capsys):
   i = 1
 
   for testUsername in testUsernames:
-    users += str(i) + ',' + testUsername + ',' + defaultPassword + ',' + defaultFirstName + ',' + defaultLastName + '\n'
+    users += f"{str(i)},{testUsername},{defaultPassword},{defaultFirstName},{defaultLastName},{defaultEmailPref},{defaultSMSPref},{defaultAdsPref},{defaultLanguage}\n"
     i += 1
 
   file = open("Users.txt", "w")
@@ -254,7 +258,7 @@ def test_newUserInvalidExisting(monkeypatch, capsys):
 
     main()
     assert capsys.readouterr().out.split('\n')[-3] == "Thank you, bye!"
-    assert open("Users.txt", "r").read() == users + f"{str(i)},{defaultUser},{defaultPassword},{defaultFirstName},{defaultLastName}\n"
+    assert open("Users.txt", "r").read() == users + f"{str(i)},{defaultUser},{defaultPassword},{defaultFirstName},{defaultLastName},{defaultEmailPref},{defaultSMSPref},{defaultAdsPref},{defaultLanguage}\n"
     file = open("Users.txt", "w")
     file.write(users)
     file.close()
@@ -267,7 +271,7 @@ def test_newUserExceedsLimit(monkeypatch, capsys):
   with open("Users.txt", "w") as file:
     file.write(defaultUserString)
     for i in range(2,maxUsers+1):
-      file.write(f"{i},{defaultUser}{i},{defaultPassword},{defaultFirstName},{defaultLastName}\n")
+      file.write(f"{i},{defaultUser}{i},{defaultPassword},{defaultFirstName},{defaultLastName},{defaultEmailPref},{defaultSMSPref},{defaultAdsPref},{defaultLanguage}\n")
 
   # create the 6th account
   prompts = iter([{0: 'To Create an Account'}, {0: 'For Existing Users'}, {0: 'Log out'}, {0: 'Exit'}])
@@ -300,7 +304,7 @@ def test_loginExistingUser(monkeypatch, capsys):
   i = 1
 
   for testUsernamePassword in testUsernamesPasswords:
-    users += f"{str(i)},{testUsernamePassword[0]},{testUsernamePassword[1]},{defaultFirstName},{defaultLastName}\n"
+    users += f"{str(i)},{testUsernamePassword[0]},{testUsernamePassword[1]},{defaultFirstName},{defaultLastName},{defaultEmailPref},{defaultSMSPref},{defaultAdsPref},{defaultLanguage}\n"
     i += 1
 
   file = open("Users.txt", "w")
@@ -462,8 +466,6 @@ def test_searchSkill(monkeypatch, capsys):
 
     assert capsys.readouterr().out.split('\n')[-3] == "Thank you, bye!"
 
-# workaround for pytest terminating after the last test function; userPaste needs to be called to recover the original data in Users.txt
-
 def test_copyrightNotice(monkeypatch, capsys):
   startTest()
 
@@ -514,7 +516,7 @@ def test_privacyPolicy(monkeypatch, capsys):
   i = 1
 
   for testUsernamePassword in testUsernamesPasswords:
-    users += f"{str(i)},{testUsernamePassword[0]},{testUsernamePassword[1]},{defaultFirstName},{defaultLastName}\n"
+    users += f"{str(i)},{testUsernamePassword[0]},{testUsernamePassword[1]},{defaultFirstName},{defaultLastName},{defaultEmailPref},{defaultSMSPref},{defaultAdsPref},{defaultLanguage}\n"
     i += 1
 
   file = open("Users.txt", "w")
@@ -543,6 +545,7 @@ def test_cookiePolicy(monkeypatch, capsys):
 
   assert "Cookies are small data files that are placed on your computer or mobile device when you visit a website. Cookies are widely used by website owners in order to make their websites work, or to work more efficiently, as well as to provide reporting information. Cookies help us deliver our services, by using our services, you agree to our use of cookies in your computer." in capsys.readouterr().out
 
+# workaround for pytest terminating after the last test function; userPaste needs to be called to recover the original data in Users.txt
 
 def test_dummy():
   userPaste()
