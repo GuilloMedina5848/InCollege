@@ -147,6 +147,8 @@ def getPreference(userID, preference):
     i += 1
   for line in file:
       if line[1] == userID:
+        if preference == 8:
+          return line[preference].strip('\n')
         return line[preference]
 
 def UniqueUser(existingUsersList, UserID, password):
