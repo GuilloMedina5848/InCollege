@@ -23,7 +23,6 @@ def getName(userID):
 
   return user[3], user[4]
 
-
 def addJob(jobsList, userID):
     """
     Allows a logged-in user to post a job.
@@ -78,33 +77,79 @@ def printJobs(jobsList):
             print(f"Salary: {salary}")
             print("\n------------------------\n")
 
-def existingUser(existingUsersList, loggedIn):
+def existingUser(existingUsersList):
   """
   allow existing user to log in
   """
-  run = True
-  while run:
+  while True:
     existingUserID = input("Please enter UserID: ")
     existingPassword = input("Please enter password: ")
     for line in existingUsersList:
       if line[1] == existingUserID and line[2] == existingPassword:
         print(
             f"\nWelcome, {existingUserID}. You have successfully logged in.")
-        loggedIn = True
-        run = False
-        return existingUserID
+        Email = line[5]
+        SMS = line[6]
+        Ads = line[7]
+        Language = line[8].strip('\n')
+        return existingUserID, Email == 'True', SMS == 'True', Ads == 'True', Language
 
     print("\nIncorrect username / password, please try again\n")
 
-
-def addToFile(UserCount, username, password, first, last, filename="Users.txt"):
+def addToFile(UserCount, username, password, first, last, Email, SMS, Ads, Language, filename="Users.txt"):
   """
   : Adds the user's details to a file named "Users.txt".
   """
   with open(filename, "a") as file:
-    file.write(f"{UserCount},{username},{password},{first},{last}\n")
+    file.write(f"{UserCount},{username},{password},{first},{last},{Email},{SMS},{Ads},{Language}\n")
   file.close()
 
+def changePreference(userID, preference, setting):
+  if preference == "Email":
+     preference = 5
+  elif preference == "SMS":
+     preference = 6
+  elif preference == "Ads":
+     preference = 7
+  elif preference == "Language":
+     setting = setting+'\n'
+     preference = 8
+  
+  file = open("Users.txt", "r").readlines()
+  i = 0
+  for line in file:
+    file[i] = line.split(',')
+    i += 1
+  for line in file:
+      if line[1] == userID:
+        line[preference] = setting
+  i = 0
+  for line in file:
+    file[i] = ','.join(str(v) for v in line)
+    i += 1
+  file = ''.join(file)
+  open("Users.txt", "w").write(file)
+
+def getPreference(userID, preference):
+  if preference == "Email":
+     preference = 5
+  elif preference == "SMS":
+     preference = 6
+  elif preference == "Ads":
+     preference = 7
+  elif preference == "Language":
+     preference = 8
+  
+  file = open("Users.txt", "r").readlines()
+  i = 0
+  for line in file:
+    file[i] = line.split(',')
+    i += 1
+  for line in file:
+      if line[1] == userID:
+        if preference == 8:
+          return line[preference].strip('\n')
+        return line[preference]
 
 def UniqueUser(existingUsersList, UserID, password):
   """
@@ -127,8 +172,7 @@ def UniqueUser(existingUsersList, UserID, password):
     return False
   return True
 
-
-def createUser(UserCount, existingUsersList, jobsList, loggedIn, Email, SMS, Ads):
+def createUser(UserCount, existingUsersList, jobsList, loggedIn):
   """
    Registers a new user, provided the UserID is unique and the 
    password meets the requirements.
@@ -149,48 +193,49 @@ def createUser(UserCount, existingUsersList, jobsList, loggedIn, Email, SMS, Ads
           "\nYour username is unique and the password meets all the requirements.\n"
       )
       addToFile(UserCount, userID,
-                password, first, last)  # Save the new user information to the file
+                password, first, last, True, True, True, "English")# Save the new user information to the file
+      existingUsersList.append(['UserCount', userID, password, first, last, True, True, True, "English"])
       print("\n============================\n")
       print("Thank you for creating an account.")
       print(f"\nWelcome, {userID}. You have successfully logged in.\n")
       loggedIn = True
       run = False
-      mainMenu(UserCount, existingUsersList, jobsList, userID, loggedIn, Email, SMS, Ads)  # Call the main menu function for logged-in users
+      mainMenu(UserCount, existingUsersList, jobsList, userID, loggedIn, True, True, True, "English")  # Call the main menu function for logged-in users
     else:
       print(
           "\nYour username is already taken or the password doesn't meet requirements. Please start over\n"
       )
 
-
-def mainMenu(UserCount, existingUsersList, jobsList, userID, loggedIn, Email, SMS, Ads):
+def mainMenu(UserCount, existingUsersList, jobsList, userID, loggedIn, Email, SMS, Ads, Language):
   """
    Displays the main menu to the user after they log in.
   """
-  #Display current language
-  languageFile = open("Language.txt", "r+") 
-  currentLanguage = languageFile.read()
-  languageFile.close()
-  print("Current language: " + currentLanguage)
-  #Display preferences
-  if Email == True:
-    PEmails = "ON"
-  elif Email == False:
-    PEmails = "OFF"
-  
-  if SMS == True:
-    PSMS = "ON"
-  elif SMS == False:
-    PSMS = "OFF"
-  
-  if Ads == True:
-    PAds = "ON"
-  elif Ads == False:
-    Pads = "OFF"
-    
-  print("Current preferences (Emails: " + PEmails + ", SMS: " + PSMS + ", Advertising: " + PAds + ")")
-
   loggedIn = True
   while True:
+    #Display current language
+    currentLanguage = getPreference(userID, "Language")
+    print("\nCurrent Language: " + currentLanguage)
+    #Display preferences
+    emailState = getPreference(userID, "Email")
+    smsState = getPreference(userID, "SMS")
+    adsState = getPreference(userID, "Ads")
+
+    if emailState == "True":
+      emailPreference = "ON"
+    elif emailState == "False":
+      emailPreference = "OFF"
+    
+    if smsState == "True":
+      smsPreference = "ON"
+    elif smsState == "False":
+      smsPreference = "OFF"
+    
+    if adsState == "True":
+      adsPreference = "ON"
+    elif adsState == "False":
+      adsPreference = "OFF"
+      
+    print("Current preferences (Emails: " + emailPreference + ", SMS: " + smsPreference + ", Advertising: " + adsPreference + ")")
     try: 
       choice = prompt({
                     "type": "list",
@@ -269,10 +314,10 @@ def mainMenu(UserCount, existingUsersList, jobsList, userID, loggedIn, Email, SM
               print("Invalid choice. Please enter a valid option.")
               
         case "Useful Links":
-            usefulLinks(UserCount, existingUsersList, jobsList, loggedIn)
+            usefulLinks(UserCount, existingUsersList, jobsList, loggedIn, userID)
 
         case "InCollege Important Links":
-            importantLinks(loggedIn, Email, SMS, Ads) 
+            importantLinks(loggedIn, Email, SMS, Ads, userID) 
 
         case "Log out":
             print("\nLogging out.\n")
@@ -300,18 +345,18 @@ def searchExistingUsers(existingUsersList):
     if not found:
         print("\nThey are not yet a part of the InCollege system yet.\n")
 
-def signIn(UserCount, existingUsersList, jobsList, loggedIn, Email, SMS, Ads): 
-  userID = existingUser(existingUsersList, loggedIn)
-  mainMenu(UserCount, existingUsersList, jobsList, userID, loggedIn, Email, SMS, Ads)  # Call the main menu function for logged-in users
+def signIn(UserCount, existingUsersList, jobsList):
+  userID, Email, SMS, Ads, Language = existingUser(existingUsersList)
+  mainMenu(UserCount, existingUsersList, jobsList, userID, True, Email, SMS, Ads, Language)  # Call the main menu function for logged-in users
 
-def signUp(UserCount, existingUsersList, jobsList, loggedIn, Email, SMS, Ads):
+def signUp(UserCount, existingUsersList, jobsList, loggedIn):
   if UserCount >= 5:
     print(
       "\nAll permitted accounts have been created, please come back later\n"
     )
   else:
     UserCount += 1
-    createUser(UserCount, existingUsersList, jobsList, loggedIn, Email, SMS, Ads)
+    createUser(UserCount, existingUsersList, jobsList, loggedIn)
   
 def usefulLinks(UserCount, existingUsersList, jobsList, loggedIn):
     """
@@ -417,10 +462,10 @@ def signInOrUp(UserCount, existingUsersList, jobsList, loggedIn):
 
             match choice[0]:
                 case "For Existing User":
-                    signIn(UserCount, existingUsersList, jobsList, loggedIn, Email, SMS, Ads)
+                    signIn(UserCount, existingUsersList, jobsList)
 
                 case "To Create an Account":
-                    signUp(UserCount, existingUsersList, jobsList, loggedIn, Email, SMS, Ads)
+                    signUp(UserCount, existingUsersList, jobsList, loggedIn)
 
                 case "Back to General":
                     run = False
@@ -432,7 +477,7 @@ def signInOrUp(UserCount, existingUsersList, jobsList, loggedIn):
         except ValueError:
             print("Choice not found, please try again.\n") 
 
-def importantLinks(loggedIn, Email, SMS, Ads):
+def importantLinks(loggedIn, Email, SMS, Ads, userID = ""):
    """
    Important Links option
    """
@@ -459,7 +504,7 @@ def importantLinks(loggedIn, Email, SMS, Ads):
             print("\n© 2023 InCollege\n")
 
           case "About":
-            print("\nIn College: Welcome to In College, the world's largest college student network with many users in many countries and territories worldwide.\n")
+            print("\nWe're InCollege, a social networking solution made by college students for college students.\n")
 
           case "Accessibility":
             print("\nInCollege is designed with navigation, readability, and usability, which benefits all users. By adding alt text to images and ensuring a logical content structure we have achieved to be ADA compliant and all users including those with disabilities can enjoy our services.\n")
@@ -470,9 +515,9 @@ def importantLinks(loggedIn, Email, SMS, Ads):
           case "Privacy Policy":
             print("\nThis Website collects some Personal Data from its Users. Among the types of Personal Data that this Website collects, by itself or through third parties, there are: email address; password; first name; last name; among various types of Data. The Owner takes appropriate security measures to prevent unauthorized access, disclosure, modification, or unauthorized destruction of the Data.\n")
             if loggedIn == False:
-              print("\nYou need to be loggedIn to access guest controls.\n")
+              print("\nYou need to be logged in to access guest controls.\n")
             else:
-              guestControls(Email, SMS, Ads)
+              guestControls(userID)
 
           case "Cookie Policy":
             print("\nCookies are small data files that are placed on your computer or mobile device when you visit a website. Cookies are widely used by website owners in order to make their websites work, or to work more efficiently, as well as to provide reporting information. Cookies help us deliver our services, by using our services, you agree to our use of cookies in your computer.\n")
@@ -481,19 +526,19 @@ def importantLinks(loggedIn, Email, SMS, Ads):
             print("\nExcept as permitted by the copyright law applicable to you, you may not reproduce or communicate any of the content on this website, including files downloadable from this website, without the permission of the copyright owner.\n")
 
           case "Brand Policy":
-            print("\nUnder construction.\n")
+            print("\nInCollege understands how hard it is for students looking for a first job and will provide the tools that they need in order to be successful. Our goal is to continuously advance what's possibly in education and connect students from all around the world.\n")
 
           case "Guest Controls":
             if loggedIn == False:
-              print("\nYou need to be loggedIn to acess guest controls.\n")
+              print("\nYou need to be logged in to access guest controls.\n")
             else:
-              guestControls(Email, SMS, Ads)
+              guestControls(userID)
 
           case "Languages":
             if loggedIn == False:
-              print("\nYou need to be loggedIn to change the language.\n")
+              print("\nYou need to be logged in to change the language.\n")
             else:
-              changeLanguage()
+              changeLanguage(userID)
 
           case "Back to Main Menu":
             break
@@ -504,8 +549,28 @@ def importantLinks(loggedIn, Email, SMS, Ads):
       except ValueError:
             print("Choice not found, please try again.\n")
 
-def guestControls(Email, SMS, Ads):
+def guestControls(userID):
   while True:
+    emailState = getPreference(userID, "Email")
+    smsState = getPreference(userID, "SMS")
+    adsState = getPreference(userID, "Ads")
+
+    if emailState == "True":
+      emailPreference = "ON"
+    elif emailState == "False":
+      emailPreference = "OFF"
+    
+    if smsState == "True":
+      smsPreference = "ON"
+    elif smsState == "False":
+      smsPreference = "OFF"
+    
+    if adsState == "True":
+      adsPreference = "ON"
+    elif adsState == "False":
+      adsPreference = "OFF"
+      
+    print("\nCurrent preferences (Emails: " + emailPreference + ", SMS: " + smsPreference + ", Advertising: " + adsPreference + ")\n")
     try:
       # Ask for user input
       choice = prompt({ "type": "list",
@@ -518,37 +583,43 @@ def guestControls(Email, SMS, Ads):
 
       match choice[0]:
           case "Email":
-            Email = input("\nDo you want to receive InCollege emails? Type yes or no.\n").lower()
+            emailChoice = input("\nDo you want to receive InCollege emails? Type yes or no.\n").lower()
 
-            if Email == "yes":
+            if emailChoice == "yes":
               print("\nYou will keep receiving InCollege emails\n")
+              changePreference(userID, "Email", True)
               Email = True
-            elif Email == "no":
+            elif emailChoice == "no":
               print("\nYou will stop receiving InCollege emails\n")
+              changePreference(userID, "Email", False)
               Email = False
             else: 
               print("\nPlease type yes or no\n")
 
           case "SMS":
-            SMS = input("\nDo you want to receive InCollege SMS's? Type yes or no.\n").lower()
+            SMSChoice = input("\nDo you want to receive InCollege SMS's? Type yes or no.\n").lower()
 
-            if SMS == "yes":
+            if SMSChoice == "yes":
               print("\nYou will keep receiving InCollege SMS's\n")
+              changePreference(userID, "SMS", True)
               SMS = True
-            elif SMS == "no":
+            elif SMSChoice == "no":
               print("\nYou will stop receiving InCollege SMS's\n")
+              changePreference(userID, "SMS", False)
               SMS = False
             else: 
               print("\nPlease type yes or no\n")
 
           case "Advertising":
-            Ads = input("\nDo you want to receive InCollege advertising? Type yes or no.\n").lower()
+            adsChoice = input("\nDo you want to receive InCollege advertising? Type yes or no.\n").lower()
 
-            if Ads == "yes":
+            if adsChoice == "yes":
               print("\nYou will keep receiving InCollege advertising\n")
+              changePreference(userID, "Ads", True)
               Ads = True
-            elif Ads == "no":
+            elif adsChoice == "no":
               print("\nYou will stop receiving InCollege advertising\n")
+              changePreference(userID, "Ads", False)
               Ads = False
             else: 
               print("\nPlease type yes or no\n")
@@ -562,9 +633,8 @@ def guestControls(Email, SMS, Ads):
     except ValueError:
         print("Choice not found, please try again.\n")
 
-def changeLanguage():
-  file = open("Language.txt", "r+")
-  currentLanguage = file.read()
+def changeLanguage(userID):
+  currentLanguage = getPreference(userID, "Language")
   print("\nCurrent Language: " + currentLanguage + "\n")
 
   while True:
@@ -584,22 +654,16 @@ def changeLanguage():
                 print("\nCurrent Language is already in English\n")
               else:
                 print("\nLanguage changed to English\n")
-                file.truncate(0) #Erases the contents of file
-                file.seek(0)
-                file.write("English")
-                currentLanguage = file.read()
-                file.close() #saves file and closes it
-
+                changePreference(userID, "Language", "English")
+                currentLanguage = 'English'
+                
             case "Spanish":
               if currentLanguage == "Spanish":
                 print("\nCurrent Language is already in Spanish\n")
               else:
                 print("\nLanguage changed to Spanish\n")
-                file.truncate(0) #Erases the contents of file
-                file.seek(0)
-                file.write("Spanish")
-                currentLanguage = file.read()
-                file.close() #saves file and closes it
+                changePreference(userID, "Language", "Spanish")
+                currentLanguage = 'Spanish'
 
             case "Back to Important Links":
               break
@@ -615,7 +679,6 @@ def changeLanguage():
 ##################################################
 def main():
   print("\n Welcome to InCollege!")
-  Email, SMS, Ads = True, True, True
   PEmails, PSMS, Pads = "ON", "ON", "ON"
   print("\n======================================\n")
   print("Steven's story:\n")
@@ -629,12 +692,15 @@ def main():
   loggedIn = False #check if user is logged in
   with open(filename, "r") as file:
     for line in file:  # reading each line
-      userIndex, stored_username, stored_password, first, last = line.strip().split(
+      userIndex, stored_username, stored_password, first, last, Email, SMS, Ads, Language = line.strip().split(
           ',')  # parsing each line
       existingUsersList.append(
           (userIndex, stored_username,
-           stored_password, first, last))  # adding it to the list of users
+           stored_password, first, last, Email, SMS, Ads, Language))  # adding it to the list of users
       UserCount += 1  # incrementing each user
+  
+  Email, SMS, Ads = True, True, True
+  
   jobsList = []
     # Load jobs from the file if available
   jobsFilename = "Jobs.txt"
@@ -665,9 +731,9 @@ def main():
       })
       match choice[0]:
         case "For Existing Users":
-          signIn(UserCount, existingUsersList, jobsList, loggedIn, Email, SMS, Ads)
+          signIn(UserCount, existingUsersList, jobsList)
         case "To Create an Account":
-          signUp(UserCount, existingUsersList, jobsList, loggedIn, Email, SMS, Ads)
+          signUp(UserCount, existingUsersList, jobsList, loggedIn)
     
         case "To Find an Existing User":
           # Call the searchExistingUsers function

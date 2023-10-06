@@ -9,7 +9,11 @@ defaultUser = "pyTestUser"
 defaultPassword = "pyTest123%"
 defaultFirstName = "pyTest"
 defaultLastName = "User"
-defaultUserString = f"1,{defaultUser},{defaultPassword},{defaultFirstName},{defaultLastName}\n"
+defaultEmailPref = True
+defaultSMSPref = True
+defaultAdsPref = True
+defaultLanguage = "English"
+defaultUserString = f"1,{defaultUser},{defaultPassword},{defaultFirstName},{defaultLastName},{defaultEmailPref},{defaultSMSPref},{defaultAdsPref},{defaultLanguage}\n"
 maxUsers = 5
 
 jobCopy = ""
@@ -174,7 +178,7 @@ def test_newUser(monkeypatch, capsys):
 
     main()
     assert capsys.readouterr().out.split('\n')[-3] == "Thank you, bye!"
-    users += f"{str(i)},{testUsernamePassword[0]},{testUsernamePassword[1]},{defaultFirstName},{defaultLastName}\n"
+    users += f"{str(i)},{testUsernamePassword[0]},{testUsernamePassword[1]},{defaultFirstName},{defaultLastName},{defaultEmailPref},{defaultSMSPref},{defaultAdsPref},{defaultLanguage}\n"
     assert open("Users.txt", "r").read() == users
     i += 1
 
@@ -237,7 +241,7 @@ def test_newUserInvalidExisting(monkeypatch, capsys):
   i = 1
 
   for testUsername in testUsernames:
-    users += str(i) + ',' + testUsername + ',' + defaultPassword + ',' + defaultFirstName + ',' + defaultLastName + '\n'
+    users += f"{str(i)},{testUsername},{defaultPassword},{defaultFirstName},{defaultLastName},{defaultEmailPref},{defaultSMSPref},{defaultAdsPref},{defaultLanguage}\n"
     i += 1
 
   file = open("Users.txt", "w")
@@ -254,7 +258,7 @@ def test_newUserInvalidExisting(monkeypatch, capsys):
 
     main()
     assert capsys.readouterr().out.split('\n')[-3] == "Thank you, bye!"
-    assert open("Users.txt", "r").read() == users + f"{str(i)},{defaultUser},{defaultPassword},{defaultFirstName},{defaultLastName}\n"
+    assert open("Users.txt", "r").read() == users + f"{str(i)},{defaultUser},{defaultPassword},{defaultFirstName},{defaultLastName},{defaultEmailPref},{defaultSMSPref},{defaultAdsPref},{defaultLanguage}\n"
     file = open("Users.txt", "w")
     file.write(users)
     file.close()
@@ -267,7 +271,7 @@ def test_newUserExceedsLimit(monkeypatch, capsys):
   with open("Users.txt", "w") as file:
     file.write(defaultUserString)
     for i in range(2,maxUsers+1):
-      file.write(f"{i},{defaultUser}{i},{defaultPassword},{defaultFirstName},{defaultLastName}\n")
+      file.write(f"{i},{defaultUser}{i},{defaultPassword},{defaultFirstName},{defaultLastName},{defaultEmailPref},{defaultSMSPref},{defaultAdsPref},{defaultLanguage}\n")
 
   # create the 6th account
   prompts = iter([{0: 'To Create an Account'}, {0: 'For Existing Users'}, {0: 'Log out'}, {0: 'Exit'}])
@@ -300,7 +304,7 @@ def test_loginExistingUser(monkeypatch, capsys):
   i = 1
 
   for testUsernamePassword in testUsernamesPasswords:
-    users += f"{str(i)},{testUsernamePassword[0]},{testUsernamePassword[1]},{defaultFirstName},{defaultLastName}\n"
+    users += f"{str(i)},{testUsernamePassword[0]},{testUsernamePassword[1]},{defaultFirstName},{defaultLastName},{defaultEmailPref},{defaultSMSPref},{defaultAdsPref},{defaultLanguage}\n"
     i += 1
 
   file = open("Users.txt", "w")
@@ -404,7 +408,7 @@ def test_searchJob(monkeypatch, capsys):
 
   assert "under construction." in capsys.readouterr().out
 
-#
+# tests the post job feature
 def test_postJob(monkeypatch, capsys):
   startTest()
   jobClear()
@@ -420,7 +424,7 @@ def test_postJob(monkeypatch, capsys):
   assert capsys.readouterr().out.split('\n')[-3] == "Thank you, bye!"
   assert open("Jobs.txt", "r").read() == defaultJobString
 
-#
+# tests the post job feature when the next job would exceed the post limit
 def test_postJobExceedsLimit(monkeypatch, capsys):
   startTest()
   jobClear()
@@ -462,10 +466,162 @@ def test_searchSkill(monkeypatch, capsys):
 
     assert capsys.readouterr().out.split('\n')[-3] == "Thank you, bye!"
 
-# workaround for pytest terminating after the last test function; userPaste needs to be called to recover the original data in Users.txt
+# tests whether the sign in feature works from the useful links menu
+def test_usefulLinksSignIn(monkeypatch, capsys):
+  userClear()
 
+  testUsernamesPasswords = [["pyTestUser", "pytest123%"],
+                            ["pyTestUser2", "PYTEST123"],
+                            ["thisIsALongTestStringPyTestUser3", "aBcd&&&&"],
+                            ["4", "999ZZZZ"], ["b", "kop0`-2fwe"]]
+
+  users = ""
+  i = 1
+
+  for testUsernamePassword in testUsernamesPasswords:
+    users += f"{str(i)},{testUsernamePassword[0]},{testUsernamePassword[1]},{defaultFirstName},{defaultLastName},{defaultEmailPref},{defaultSMSPref},{defaultAdsPref},{defaultLanguage}\n"
+    i += 1
+
+  file = open("Users.txt", "w")
+  file.write(users)
+  file.close()
+
+  for testUsernamePassword in testUsernamesPasswords:
+
+    prompts = iter([{0: 'Useful Links'}, {0: 'General'}, {0: 'Sign Up'}, {0: 'For Existing User'}, {0: 'Log out'}, {0: 'Back to General'}, {0: 'Back to Useful Links'}, {0: 'Back to Main Menu'}, {0: 'Exit'}])
+    monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+
+    inputs = iter([testUsernamePassword[0], testUsernamePassword[1]])
+    monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+    main()
+    assert capsys.readouterr().out.split('\n')[-3] == "Thank you, bye!"
+    assert open("Users.txt", "r").read() == users
+  
+# tests whether the sign up feature works from the useful links menu
+def test_usefulLinksSignUp(monkeypatch, capsys):
+  userClear()
+
+  testUsernamesPasswords = [["pyTestUser", "pyTest123%"],
+                            ["pyTestUser2", "PYTEST123!"],
+                            ["thisIsALongTestStringPyTestUser3", "1aBcd&&&&"],
+                            ["4", "999ZZZZ^"], ["b", "kOp0`-2fwe"]]
+
+  users = ""
+  i = 1
+
+  for testUsernamePassword in testUsernamesPasswords:
+
+    prompts = iter([{0: 'Useful Links'}, {0: 'General'}, {0: 'Sign Up'}, {0: 'To Create an Account'}, {0: 'Log out'}, {0: 'Back to General'}, {0: 'Back to Useful Links'}, {0: 'Back to Main Menu'}, {0: 'Exit'}])
+    monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+
+    inputs = iter([testUsernamePassword[0], testUsernamePassword[1], defaultFirstName, defaultLastName])
+    monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+    main()
+    assert capsys.readouterr().out.split('\n')[-3] == "Thank you, bye!"
+    users += f"{str(i)},{testUsernamePassword[0]},{testUsernamePassword[1]},{defaultFirstName},{defaultLastName},{defaultEmailPref},{defaultSMSPref},{defaultAdsPref},{defaultLanguage}\n"
+    assert open("Users.txt", "r").read() == users
+    i += 1
+
+def test_helpCenter(monkeypatch, capsys):
+  userClear()
+
+  prompts = iter([{0: 'Useful Links'}, {0: 'General'}, {0: 'Help Center'}, {0: 'Back to Useful Links'}, {0: 'Back to Main Menu'}, {0: 'Exit'}])
+  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+
+  main()
+
+  assert "We're here to help." in capsys.readouterr().out
+
+
+def test_about(monkeypatch, capsys):
+  userClear()
+
+  prompts = iter([{0: 'Useful Links'}, {0: 'General'}, {0: 'About'}, {0: 'Back to Useful Links'}, {0: 'Back to Main Menu'}, {0: 'Exit'}])
+  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+
+  main()
+
+  assert "Welcome to In College, the world's largest college student network with many users in many countries and territories worldwide." in capsys.readouterr().out
+
+def test_press(monkeypatch, capsys):
+  userClear()
+
+  prompts = iter([{0: 'Useful Links'}, {0: 'General'}, {0: 'Press'}, {0: 'Back to Useful Links'}, {0: 'Back to Main Menu'}, {0: 'Exit'}])
+  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+
+  main()
+
+  assert "In College Pressroom: Stay on top of the latest news, updates, and reports." in capsys.readouterr().out
+
+def test_blog(monkeypatch, capsys):
+  userClear()
+
+  prompts = iter([{0: 'Useful Links'}, {0: 'General'}, {0: 'Blog'}, {0: 'Back to Useful Links'}, {0: 'Back to Main Menu'}, {0: 'Exit'}])
+  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+
+  main()
+
+  assert "Under construction." in capsys.readouterr().out
+
+def test_careers(monkeypatch, capsys):
+  userClear()
+
+  prompts = iter([{0: 'Useful Links'}, {0: 'General'}, {0: 'Careers'}, {0: 'Back to Useful Links'}, {0: 'Back to Main Menu'}, {0: 'Exit'}])
+  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+
+  main()
+
+  assert "Under construction." in capsys.readouterr().out
+
+def test_developers(monkeypatch, capsys):
+  userClear()
+
+  prompts = iter([{0: 'Useful Links'}, {0: 'General'}, {0: 'Developers'}, {0: 'Back to Useful Links'}, {0: 'Back to Main Menu'}, {0: 'Exit'}])
+  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+
+  main()
+
+  assert "Under construction." in capsys.readouterr().out
+
+def test_browse(monkeypatch, capsys):
+  userClear()
+
+  prompts = iter([{0: 'Useful Links'}, {0: 'Browse InCollege'}, {0: 'Back to Main Menu'}, {0: 'Exit'}])
+  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+
+  main()
+
+  assert "Under construction." in capsys.readouterr().out
+
+def test_businessSolutions(monkeypatch, capsys):
+  userClear()
+
+  prompts = iter([{0: 'Useful Links'}, {0: 'Business Solutions'}, {0: 'Back to Main Menu'}, {0: 'Exit'}])
+  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+
+  main()
+
+  assert "Under construction." in capsys.readouterr().out
+
+def test_directories(monkeypatch, capsys):
+  userClear()
+
+  prompts = iter([{0: 'Useful Links'}, {0: 'Directories'}, {0: 'Back to Main Menu'}, {0: 'Exit'}])
+  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+
+  main()
+
+  assert "Under construction." in capsys.readouterr().out
+
+###################
+# Important Links #
+###################
+
+# tests the copyright notice feature
 def test_copyrightNotice(monkeypatch, capsys):
-  startTest()
+  userClear()
 
   prompts = iter([{0: 'InCollege Important Links'}, {0: 'A Copyright Notice'}, {0: 'Back to Main Menu'}, {0: 'Exit'}])
   monkeypatch.setattr('main.prompt', lambda _: next(prompts))
@@ -474,28 +630,18 @@ def test_copyrightNotice(monkeypatch, capsys):
 
   assert "2023 InCollege" in capsys.readouterr().out
 
-def test_about(monkeypatch, capsys):
-  startTest()
+def test_aboutImportant(monkeypatch, capsys):
+  userClear()
 
   prompts = iter([{0: 'InCollege Important Links'}, {0: 'About'}, {0: 'Back to Main Menu'}, {0: 'Exit'}])
   monkeypatch.setattr('main.prompt', lambda _: next(prompts))
 
   main()
 
-  assert "Welcome to In College, the world's largest college student network with many users in many countries and territories worldwide." in capsys.readouterr().out
-
-def test_userAgreement(monkeypatch, capsys):
-  startTest()
-
-  prompts = iter([{0: 'InCollege Important Links'}, {0: 'User Agreement'}, {0: 'Back to Main Menu'}, {0: 'Exit'}])
-  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
-
-  main()
-
-  assert "Disclaimer: By using InCollege you agree to everything our policies say, including data being collected from you, the use of cookies on your computer, and copyright law applicable to you, among others. Please check our Privacy, Cookie, Copyright, and Brand policies for more detailed information." in capsys.readouterr().out
+  assert "We're InCollege, a social networking solution made by college students for college students." in capsys.readouterr().out
 
 def test_accessibility(monkeypatch, capsys):
-  startTest()
+  userClear()
 
   prompts = iter([{0: 'InCollege Important Links'}, {0: 'Accessibility'}, {0: 'Back to Main Menu'}, {0: 'Exit'}])
   monkeypatch.setattr('main.prompt', lambda _: next(prompts))
@@ -504,6 +650,15 @@ def test_accessibility(monkeypatch, capsys):
 
   assert "InCollege is designed with navigation, readability, and usability, which benefits all users. By adding alt text to images and ensuring a logical content structure we have achieved to be ADA compliant and all users including those with disabilities can enjoy our services." in capsys.readouterr().out
 
+def test_userAgreement(monkeypatch, capsys):
+  userClear()
+
+  prompts = iter([{0: 'InCollege Important Links'}, {0: 'User Agreement'}, {0: 'Back to Main Menu'}, {0: 'Exit'}])
+  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+
+  main()
+
+  assert "Disclaimer: By using InCollege you agree to everything our policies say, including data being collected from you, the use of cookies on your computer, and copyright law applicable to you, among others. Please check our Privacy, Cookie, Copyright, and Brand policies for more detailed information." in capsys.readouterr().out
 
 def test_privacyPolicy(monkeypatch, capsys):
   userClear()
@@ -514,7 +669,7 @@ def test_privacyPolicy(monkeypatch, capsys):
   i = 1
 
   for testUsernamePassword in testUsernamesPasswords:
-    users += f"{str(i)},{testUsernamePassword[0]},{testUsernamePassword[1]},{defaultFirstName},{defaultLastName}\n"
+    users += f"{str(i)},{testUsernamePassword[0]},{testUsernamePassword[1]},{defaultFirstName},{defaultLastName},{defaultEmailPref},{defaultSMSPref},{defaultAdsPref},{defaultLanguage}\n"
     i += 1
 
   file = open("Users.txt", "w")
@@ -532,9 +687,8 @@ def test_privacyPolicy(monkeypatch, capsys):
     main()
     assert "Current preferences (Emails: ON, SMS: ON, Advertising: ON)" in capsys.readouterr().out
 
-
 def test_cookiePolicy(monkeypatch, capsys):
-  startTest()
+  userClear()
 
   prompts = iter([{0: 'InCollege Important Links'}, {0: 'Cookie Policy'}, {0: 'Back to Main Menu'}, {0: 'Exit'}])
   monkeypatch.setattr('main.prompt', lambda _: next(prompts))
@@ -543,6 +697,83 @@ def test_cookiePolicy(monkeypatch, capsys):
 
   assert "Cookies are small data files that are placed on your computer or mobile device when you visit a website. Cookies are widely used by website owners in order to make their websites work, or to work more efficiently, as well as to provide reporting information. Cookies help us deliver our services, by using our services, you agree to our use of cookies in your computer." in capsys.readouterr().out
 
+def test_copyrightPolicy(monkeypatch, capsys):
+  userClear()
+
+  prompts = iter([{0: 'InCollege Important Links'}, {0: 'Copyright Policy'}, {0: 'Back to Main Menu'}, {0: 'Exit'}])
+  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+
+  main()
+
+  assert "Except as permitted by the copyright law applicable to you, you may not reproduce or communicate any of the content on this website, including files downloadable from this website, without the permission of the copyright owner." in capsys.readouterr().out
+
+def test_brandPolicy(monkeypatch, capsys):
+  userClear()
+
+  prompts = iter([{0: 'InCollege Important Links'}, {0: 'Brand Policy'}, {0: 'Back to Main Menu'}, {0: 'Exit'}])
+  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+
+  main()
+
+  assert "InCollege understands how hard it is for students looking for a first job and will provide the tools that they need in order to be successful. Our goal is to continuously advance what's possibly in education and connect students from all around the world." in capsys.readouterr().out
+
+def test_guestControlEmail(monkeypatch, capsys):
+  startTest()
+
+  prompts = iter([{0: 'For Existing Users'}, {0: 'InCollege Important Links'}, {0: 'Guest Controls'}, {0: 'Email'}, {0: 'Back to Important Links'}, {0: 'Back to Main Menu'}, {0: 'Log out'}, {0: 'Exit'}])
+  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+
+  inputs = iter([defaultUser, defaultPassword, 'no'])
+  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+  main()
+
+  assert "You will stop receiving InCollege emails" in capsys.readouterr().out
+  assert open("Users.txt", "r").read() == f"1,{defaultUser},{defaultPassword},{defaultFirstName},{defaultLastName},False,{defaultSMSPref},{defaultAdsPref},{defaultLanguage}\n"
+  
+def test_guestControlSMS(monkeypatch, capsys):
+  startTest()
+
+  prompts = iter([{0: 'For Existing Users'}, {0: 'InCollege Important Links'}, {0: 'Guest Controls'}, {0: 'SMS'}, {0: 'Back to Important Links'}, {0: 'Back to Main Menu'}, {0: 'Log out'}, {0: 'Exit'}])
+  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+
+  inputs = iter([defaultUser, defaultPassword, 'no'])
+  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+  main()
+
+  assert "You will stop receiving InCollege SMS's" in capsys.readouterr().out
+  assert open("Users.txt", "r").read() == f"1,{defaultUser},{defaultPassword},{defaultFirstName},{defaultLastName},{defaultEmailPref},False,{defaultAdsPref},{defaultLanguage}\n"
+
+def test_guestControlAds(monkeypatch, capsys):
+  startTest()
+
+  prompts = iter([{0: 'For Existing Users'}, {0: 'InCollege Important Links'}, {0: 'Guest Controls'}, {0: 'Advertising'}, {0: 'Back to Important Links'}, {0: 'Back to Main Menu'}, {0: 'Log out'}, {0: 'Exit'}])
+  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+
+  inputs = iter([defaultUser, defaultPassword, 'no'])
+  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+  main()
+
+  assert "You will stop receiving InCollege advertising" in capsys.readouterr().out
+  assert open("Users.txt", "r").read() == f"1,{defaultUser},{defaultPassword},{defaultFirstName},{defaultLastName},{defaultEmailPref},{defaultSMSPref},False,{defaultLanguage}\n"
+
+def test_language(monkeypatch, capsys):
+  startTest()
+
+  prompts = iter([{0: 'For Existing Users'}, {0: 'InCollege Important Links'}, {0: 'Languages'}, {0: 'Spanish'}, {0: 'Back to Important Links'}, {0: 'Back to Main Menu'}, {0: 'Log out'}, {0: 'Exit'}])
+  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+
+  inputs = iter([defaultUser, defaultPassword])
+  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+  main()
+
+  assert "Language changed to Spanish" in capsys.readouterr().out
+  assert open("Users.txt", "r").read() == f"1,{defaultUser},{defaultPassword},{defaultFirstName},{defaultLastName},{defaultEmailPref},{defaultSMSPref},{defaultAdsPref},Spanish\n"
+
+# workaround for pytest terminating after the last test function; userPaste needs to be called to recover the original data in Users.txt
 
 def test_dummy():
   userPaste()
