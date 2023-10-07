@@ -21,7 +21,7 @@ class InCollegeServer():
 
     userList = []
     userCount = 0
-    maxUsers = 5
+    maxUsers = 10
 
     def updateUserList(self):
         self.userList = []
