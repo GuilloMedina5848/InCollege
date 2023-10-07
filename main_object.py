@@ -221,42 +221,34 @@ class InCollegeServer():
         if not found:
             print("\nThey are not yet a part of the InCollege system yet.\n")
 
-    # This is a bad implementation, need to fix this eventually
+    # Fixed
     def changePreference(self, preference, setting):
-        if preference == "Email":
-            preference = 5
-            self.Email = setting
-        elif preference == "SMS":
-            preference = 6
-            self.SMS = setting
-        elif preference == "Ads":
-            preference = 7
-            self.Ads = setting
+        # Mapping of preference to its corresponding index in the file
+        preference_map = {
+            "Email": 5,
+            "SMS": 6,
+            "Ads": 7,
+            "Language": 8
+        }
+
+        # Update class attributes
+        if preference in ["Email", "SMS", "Ads"]:
+            setattr(self, preference, setting)
         elif preference == "Language":
             self.Language = setting
-            setting = setting+'\n'
-            preference = 8
-        
-        file = open(self.usersFilename, "r").readlines()
-        
-        i = 0
-        for line in file:
-            file[i] = line.split(',')
-            i += 1
-        
-        for line in file:
-            if line[1] == self.userID:
-                line[preference] = setting
-                break
-        
-        i = 0
-        for line in file:
-            file[i] = ','.join(str(v) for v in line)
-            i += 1
-        
-        file = ''.join(file)
 
-        open("Users.txt", "w").write(file)
+        # Update the user's preference in the file
+        updated_file_content = []
+        with open(self.usersFilename, "r") as file:
+            for line in file:
+                parts = line.strip().split(',')
+                if parts[1] == self.userID:
+                    parts[preference_map[preference]] = str(setting)  # Ensure setting is a string before assignment
+                updated_file_content.append(','.join(parts))
+
+        with open(self.usersFilename, "w") as file:
+            file.write('\n'.join(updated_file_content) + '\n')  # Ensure there's a newline character at the end
+
 
     def changeLanguage(self):
         print("\nCurrent Language: " + self.Language + "\n")
