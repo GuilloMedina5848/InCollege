@@ -648,6 +648,7 @@ class InCollegeServer():
                 adsPreference = "OFF"
             
             print("Current preferences (Emails: " + emailPreference + ", SMS: " + smsPreference + ", Advertising: " + adsPreference + ")")
+            self.checkPendingRequests()
 
             try: 
                 choice = prompt({
@@ -816,6 +817,61 @@ class InCollegeServer():
                 connection.commit()
 
         print(f"Connection request sent to user {to_user_id}!")
+    
+    def checkPendingRequests(self):
+        with psycopg2.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+            with connection.cursor() as cursor:
+                fetch_query = """
+                SELECT student1_id 
+                FROM friendships 
+                WHERE student2_id = %s AND status = 'pending';
+                """
+                cursor.execute(fetch_query, (self.userID,))
+                requests = cursor.fetchall()
+
+        if requests:
+            print(f"\nYou have {len(requests)} pending friend requests!")
+            for request in requests:
+                self.handleFriendRequest(request[0])  # request[0] is student1_id, who sent the request
+        
+        
+    def handleFriendRequest(self, from_user_id):
+        # Fetch the name of the person who sent the request for better UI
+        with psycopg2.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+            with connection.cursor() as cursor:
+                name_query = """
+                SELECT first_name, last_name 
+                FROM users 
+                WHERE user_id = %s;
+                """
+                cursor.execute(name_query, (from_user_id,))
+                name = cursor.fetchone()
+        
+        print(f"\nFriend request from: {name[0]} {name[1]}")
+
+        choice = input("Do you want to accept this friend request? (yes/no): ").lower()
+
+        with psycopg2.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+            with connection.cursor() as cursor:
+                if choice == 'yes':
+                    # Update the friendship status to confirmed
+                    update_query = """
+                    UPDATE friendships 
+                    SET status = 'confirmed' 
+                    WHERE student1_id = %s AND student2_id = %s;
+                    """
+                    cursor.execute(update_query, (from_user_id, self.userID))
+                    print("Friend request accepted!")
+                else:
+                    # Delete the friend request record
+                    delete_query = """
+                    DELETE FROM friendships 
+                    WHERE student1_id = %s AND student2_id = %s;
+                    """
+                    cursor.execute(delete_query, (from_user_id, self.userID))
+                    print("Friend request rejected!")
+
+
 
     def __init__(self):
         self.loginScreen()
