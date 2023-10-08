@@ -947,9 +947,9 @@ class InCollegeServer():
                     WHERE (student1_id = %s AND student2_id = %s) OR (student1_id = %s AND student2_id = %s);
                     """
                     cursor.execute(delete_query, (self.userID, friend_id, friend_id, self.userID))
-                    print("Successfully disconnected from the friend.")
+                    print("Successfully disconnected!")
                 else:
-                    print("The given user is not in your friends list.")
+                    print("The given user is not in your connection list.")
 
 
 
