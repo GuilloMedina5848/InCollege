@@ -45,8 +45,6 @@ class InCollegeServer():
     Ads = True
     Language = "English"
 
-    jobsFilename = "Jobs.txt"
-    usersFilename = "Users.txt"
 
     jobsList = []
     maxJobs = 5
@@ -261,25 +259,73 @@ class InCollegeServer():
                 print("Choice not found, please try again.\n") 
 
     def searchExistingUsers(self):
-        #Search for existing users based on first and last names.
-        first_name = input("Enter the user's first name: ")
-        last_name = input("Enter the user's last name: ")
+        # Search for existing users by last name, university, or major
+        # When results of these searches are displayed, the student will have the option of sending that student a
+        # request to connect
+        column_map = {
+            "Last Name": "last_name",
+            "University": "university",
+            "Major": "major"
+        }
+        
+        while True:
+            try:
+                choice_response = prompt({
+                    "type": "list",
+                    "message": "Search by:",
+                    "choices": [
+                        "Last Name",
+                        "University",
+                        "Major",
+                        "Exit"
+                    ]
+                })
 
-        # Connect to the database
-        with psycopg2.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
-            with connection.cursor() as cursor:
-                # Query to search for the user based on the provided first and last names
-                search_query = """
-                SELECT * FROM users WHERE lower(first_name) = %s AND lower(last_name) = %s;
-                """
-                cursor.execute(search_query, (first_name.lower(), last_name.lower()))
+                choice = choice_response[0]
 
-                user = cursor.fetchone()
+                if choice == "Exit":
+                    return
 
-                if user:
-                    print("\nThey are a part of the InCollege system.\n")
-                else:
-                    print("\nThey are not yet a part of the InCollege system.\n")
+                prompt_message = None
+                if choice == "Last Name":
+                    prompt_message = "Enter the user's last name: "
+                elif choice == "University":
+                    prompt_message = "Enter the university: "
+                elif choice == "Major":
+                    prompt_message = "Enter the major: "
+
+                search_criteria = input(prompt_message)
+
+                 # Connect to the database
+                with psycopg2.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+                    with connection.cursor() as cursor:
+                        # Construct the query based on the chosen option
+                        search_query = f"""
+                        SELECT user_id, first_name, last_name, university, major 
+                        FROM users 
+                        WHERE lower({column_map[choice]}) = %s AND user_id != %s;
+                        """
+                        cursor.execute(search_query, (search_criteria.lower(), self.userID))
+
+                        users = cursor.fetchall()
+
+                        if users:
+                            for user in users:
+                                print("\nUser found in the InCollege system.\n")
+                                print(f"User ID: {user[0]}, Name: {user[1]} {user[2]}, University: {user[3]}, Major: {user[4]}")
+                                # If logged in, show the option to connect
+                                if self.loggedIn:
+                                    connect_choice = input("Do you want to send this user a request to connect? (yes/no): ").lower()
+                                    if connect_choice == "yes":
+                                        # Handle sending a request
+                                        self.sendConnectRequest(from_user_id = self.userID, to_user_id = user[0])
+                                    else:
+                                        print("Request not sent.")
+                        else:
+                            print(f"\nNo user found with {choice}: {search_criteria}.\n")
+
+            except ValueError:
+                print("Invalid choice, please try again.\n")
 
     # Fixed
     def changePreference(self, preference, setting):
@@ -676,6 +722,16 @@ class InCollegeServer():
                     case "InCollege Important Links":
                         self.importantLinks() 
                     case "Log out":
+                        # Restore the variables
+                        self.userID = ""
+                        self.loggedIn = False
+                        self.firstName = ""
+                        self.lastName = ""
+                        self.Email = True
+                        self.SMS = True
+                        self.Ads = True
+                        self.Language = "English"
+
                         print("\nLogging out.\n")
                         break
                     case __:    # <--- Else
@@ -730,6 +786,36 @@ class InCollegeServer():
             
             except ValueError:
                     print("Choice not found, please try again.\n")
+    
+    def sendConnectRequest(self, from_user_id, to_user_id):
+        # Connect to the database
+        with psycopg2.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+            with connection.cursor() as cursor:
+                # Check if there's already a request or friendship between these two users
+                check_query = """
+                SELECT * FROM friendships 
+                WHERE (student1_id = %s AND student2_id = %s) 
+                OR (student1_id = %s AND student2_id = %s);
+                """
+                cursor.execute(check_query, (from_user_id, to_user_id, to_user_id, from_user_id))
+                existing_friendship = cursor.fetchone()
+
+                if existing_friendship:
+                    if existing_friendship[3] == 'pending':
+                        print("There's already a pending request.")
+                    else:
+                        print("You're already connected with this user.")
+                    return
+
+                # Insert the connection request into the table
+                insert_query = """
+                INSERT INTO friendships (student1_id, student2_id, status) 
+                VALUES (%s, %s, 'pending');
+                """
+                cursor.execute(insert_query, (from_user_id, to_user_id))
+                connection.commit()
+
+        print(f"Connection request sent to user {to_user_id}!")
 
     def __init__(self):
         self.loginScreen()
