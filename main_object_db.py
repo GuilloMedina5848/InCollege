@@ -49,11 +49,9 @@ class InCollegeServer():
     usersFilename = "Users.txt"
 
     jobsList = []
-    jobsCount = 0
     maxJobs = 5
 
     userList = []
-    userCount = 0
     maxUsers = 10
 
     def validUser(self, UserID, password):
@@ -91,7 +89,14 @@ class InCollegeServer():
         """
         Allows a logged-in user to post a job.
         """
-        if self.jobsCount >= self.maxJobs:
+        # Connect to the database
+        with psycopg2.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+            with connection.cursor() as cursor:
+                # Get the number of jobs in the database
+                cursor.execute("SELECT COUNT(*) FROM jobs;")
+                jobs_count = cursor.fetchone()[0]
+
+        if jobs_count >= self.maxJobs:
             print("You have reached the maximum number of job postings.")
             return
 
