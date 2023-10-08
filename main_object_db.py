@@ -101,15 +101,15 @@ class InCollegeServer():
             return False
         return True
 
-    def addToFile(self, username, password, first, last, Email, SMS, Ads, Language):
-        with open(self.usersFilename, "a") as file:
-            file.write(f"{self.userCount + 1},{username},{password},{first},{last},{Email},{SMS},{Ads},{Language}\n")
-        file.close()
+    # def addToFile(self, username, password, first, last, Email, SMS, Ads, Language):
+    #     with open(self.usersFilename, "a") as file:
+    #         file.write(f"{self.userCount + 1},{username},{password},{first},{last},{Email},{SMS},{Ads},{Language}\n")
+    #     file.close()
 
-    def addToJobFile(self, title, description, employer, location, salary):
-        with open(self.jobsFilename, "a") as file:
-            file.write(f"{self.firstName},{self.lastName},{title},{description},{employer},{location},{salary}\n")
-        file.close()
+    # def addToJobFile(self, title, description, employer, location, salary):
+    #     with open(self.jobsFilename, "a") as file:
+    #         file.write(f"{self.firstName},{self.lastName},{title},{description},{employer},{location},{salary}\n")
+    #     file.close()
 
     def addJob(self):
         """
@@ -126,17 +126,24 @@ class InCollegeServer():
         location = input("Please enter the location: ")
         while True:
             try:
-                salary = f"${'{:,.2f}'.format(float(input('Please enter the salary: ')))}"
-            except:
-                print("\nPlease enter a number.\n")
-                continue
-            break
+                salary_input = float(input('Please enter the salary: '))
+                salary = round(salary_input, 2)  # Ensure it's rounded to 2 decimal places if needed
+                break
+            except ValueError:
+                print("\nPlease enter a valid number for salary.\n")
 
         # jobsList.append((self.firstName, self.lastName, title, description, employer, location, salary))
         # saveJobs(jobsList)
 
-        self.addToJobFile(title, description, employer, location, salary)
-        self.updateJobList()
+        # Connect to the database
+        with psycopg2.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+            with connection.cursor() as cursor:
+                # Insert job details into the jobs table
+                insert_query = """
+                INSERT INTO jobs (title, description, employer, location, salary, user_id)
+                VALUES (%s, %s, %s, %s, %s, %s);
+                """
+                cursor.execute(insert_query, (title, description, employer, location, salary, self.userID))
 
         print("\nJob posted successfully!")
 
