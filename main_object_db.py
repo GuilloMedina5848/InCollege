@@ -56,30 +56,6 @@ class InCollegeServer():
     userCount = 0
     maxUsers = 10
 
-    def updateUserList(self):
-        self.userList = []
-        count = 0
-        with open(self.usersFilename, "r") as file:
-            for line in file:  # reading each line
-                userIndex, stored_username, stored_password, first, last, Email, SMS, Ads, Language = line.strip().split(',')
-                # parsing each line
-                self.userList.append((userIndex, stored_username,stored_password, first, last, Email, SMS, Ads, Language))  # adding it to the list of users
-                count += 1  # incrementing each user
-        self.userCount = count
-
-    def updateJobList(self):
-        self.jobsList = []
-        count = 0
-        try:
-            with open(self.jobsFilename, "r") as jobsFile:
-                for line in jobsFile:
-                    firstName, lastName, title, description, employer, location, salary = line.strip().split(',')
-                    self.jobsList.append((firstName, lastName, title, description, employer, location, salary))
-                    count += 1
-        except FileNotFoundError:
-            pass  # If the file doesn't exist, start with an empty jobs list
-        self.jobsCount = count
-
     def validUser(self, UserID, password):
         """
         Checks if the provided UserID is unique
@@ -179,8 +155,15 @@ class InCollegeServer():
                 print("\nIncorrect username / password, please try again\n")
 
     def signUp(self):
-        try: 
-            if self.userCount >= self.maxUsers:
+        try:
+        # Connect to the database
+            with psycopg2.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+                with connection.cursor() as cursor:
+                    # Get the number of users in the database
+                    cursor.execute("SELECT COUNT(*) FROM users;")
+                    user_count = cursor.fetchone()[0]
+
+            if user_count >= self.maxUsers:
                 print("\nAll permitted accounts have been created, please come back later\n")
             else:
                 """
@@ -744,8 +727,6 @@ class InCollegeServer():
                     print("Choice not found, please try again.\n")
 
     def __init__(self):
-        self.updateUserList()
-        self.updateJobList()
         self.loginScreen()
 
 
