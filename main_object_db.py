@@ -659,6 +659,9 @@ class InCollegeServer():
                                             "Learn a new skill",
                                             "Useful Links", 
                                             "InCollege Important Links",
+                                            "View Pending Connection Requests",
+                                            "Show my Network",
+                                            "Disconnect from a Connection",
                                             "Log out"]
                 })
                 
@@ -722,6 +725,12 @@ class InCollegeServer():
                         self.usefulLinks()
                     case "InCollege Important Links":
                         self.importantLinks() 
+                    case "View Pending Connection Requests":
+                        self.viewPendingRequests()
+                    case "Show my Network":
+                        self.viewConnectedFriends()
+                    case "Disconnect from a Connection":
+                        self.disconnectFriend()
                     case "Log out":
                         # Restore the variables
                         self.userID = ""
@@ -870,6 +879,78 @@ class InCollegeServer():
                     """
                     cursor.execute(delete_query, (from_user_id, self.userID))
                     print("Friend request rejected!")
+
+
+    def viewPendingRequests(self):
+        with psycopg2.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+            with connection.cursor() as cursor:
+                fetch_query = """
+                SELECT student1_id, first_name, last_name 
+                FROM friendships JOIN users ON friendships.student1_id = users.user_id
+                WHERE student2_id = %s AND status = 'pending';
+                """
+                cursor.execute(fetch_query, (self.userID,))
+                requests = cursor.fetchall()
+
+        if requests:
+            print("\nPending Friend Requests:")
+            for req in requests:
+                print(f"User ID: {req[0]}, Name: {req[1]} {req[2]}")
+        else:
+            print("\nYou have no pending friend requests.")
+
+    def viewConnectedFriends(self):
+        with psycopg2.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+            with connection.cursor() as cursor:
+                # Get friends where the current user is student1
+                fetch_query_1 = """
+                SELECT student2_id, first_name, last_name 
+                FROM friendships JOIN users ON friendships.student2_id = users.user_id
+                WHERE student1_id = %s AND status = 'confirmed';
+                """
+                cursor.execute(fetch_query_1, (self.userID,))
+                friends_1 = cursor.fetchall()
+
+                # Get friends where the current user is student2
+                fetch_query_2 = """
+                SELECT student1_id, first_name, last_name 
+                FROM friendships JOIN users ON friendships.student1_id = users.user_id
+                WHERE student2_id = %s AND status = 'confirmed';
+                """
+                cursor.execute(fetch_query_2, (self.userID,))
+                friends_2 = cursor.fetchall()
+
+        friends = friends_1 + friends_2
+        if friends:
+            print("\nList of Friends:")
+            for friend in friends:
+                print(f"User ID: {friend[0]}, Name: {friend[1]} {friend[2]}")
+        else:
+            print("\nYou have no connections in the system.")
+
+    def disconnectFriend(self):
+        friend_id = input("Enter the User ID of the connection you want to disconnect from: ")
+
+        with psycopg2.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+            with connection.cursor() as cursor:
+                # Check if the given user_id exists in the friend's list
+                check_query = """
+                SELECT * FROM friendships 
+                WHERE (student1_id = %s AND student2_id = %s) OR (student1_id = %s AND student2_id = %s);
+                """
+                cursor.execute(check_query, (self.userID, friend_id, friend_id, self.userID))
+                
+                if cursor.fetchone():  # If exists
+                    # Proceed to delete the friendship
+                    delete_query = """
+                    DELETE FROM friendships 
+                    WHERE (student1_id = %s AND student2_id = %s) OR (student1_id = %s AND student2_id = %s);
+                    """
+                    cursor.execute(delete_query, (self.userID, friend_id, friend_id, self.userID))
+                    print("Successfully disconnected from the friend.")
+                else:
+                    print("The given user is not in your friends list.")
+
 
 
 
