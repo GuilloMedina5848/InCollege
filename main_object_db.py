@@ -3,27 +3,37 @@ from InquirerPy import prompt
 import psycopg2
 
 # Connect to your PostgreSQL server
-conn = psycopg2.connect(
-    dbname="incollegedb",
-    user="postgres",
-    password="postgres",
-    host="127.0.0.1",
-    port="5432"
-)
+DATABASE_NAME = "incollegedb"
+DATABASE_USER = "postgres"
+DATABASE_PASSWORD = "postgres"
+DATABASE_HOST = "localhost" 
+DATABASE_PORT = "5432"  # default PostgreSQL port
 
-# Create a new cursor object
-cur = conn.cursor()
+# Connect to the database
+with psycopg2.connect(dbname=DATABASE_NAME, user=DATABASE_USER, password=DATABASE_PASSWORD, host=DATABASE_HOST, port=DATABASE_PORT) as connection:
+    with connection.cursor() as cursor:
+        try:
+            cursor.execute("""SELECT schemaname, tablename 
+                            FROM pg_tables
+                            WHERE schemaname NOT IN ('pg_catalog', 'information_schema');""")
+            tables = cursor.fetchall()
 
-# Execute a simple SQL command
-cur.execute("SELECT version();")
-version = cur.fetchone()
-print(version)
+            if not tables:
+                print("No tables found.")
+            else:
+                for schema, table in tables:
+                    print(f"{schema}.{table}")
 
-# Close the cursor and connection
-cur.close()
-conn.close()
+        except Exception as e:
+            print(f"Error executing query: {e}")
 
 class InCollegeServer():
+    DATABASE_NAME = "incollegedb"
+    DATABASE_USER = "postgres"
+    DATABASE_PASSWORD = "postgres"
+    DATABASE_HOST = "127.0.0.1" 
+    DATABASE_PORT = "5432"  # default PostgreSQL port
+
     loggedIn = False
     userID = ""
     firstName = ""
@@ -153,41 +163,59 @@ class InCollegeServer():
             print("\nIncorrect username / password, please try again\n")
 
     def signUp(self):
-        if self.userCount >= self.maxUsers:
-            print("\nAll permitted accounts have been created, please come back later\n")
-        else:
-            """
-            Registers a new user, provided the UserID is unique and the 
-            password meets the requirements.
-            """
-            print("\n============================\n")
-            # variable to store user ID
-            while True:
-                userID = input("Please enter UserID: ")
-                print("===============================\n1) Password must be 8 - 12 characters\n2) Must contain at least one capital letter\n3) Must contain a number\n4) Must contain a special character\n =================================")
-                password = input("Please enter password: ")
-                first = input("Please enter your first name: ")
-                last = input("Please enter your last name: ")
-                if self.validUser(userID, password):
-                    print("\nYour username is unique and the password meets all the requirements.\n")
-                    self.addToFile(userID, password, first, last, True, True, True, "English") # Save the new user information to the file
-                    self.updateUserList()
-                    print("\n============================\n")
-                    print("Thank you for creating an account.")
+        try: 
+            if self.userCount >= self.maxUsers:
+                print("\nAll permitted accounts have been created, please come back later\n")
+            else:
+                """
+                Registers a new user, provided the UserID is unique and the 
+                password meets the requirements.
+                """
+                print("\n============================\n")
+                # variable to store user ID
+                while True:
+                    userID = input("Please enter UserID: ")
+                    print("===============================\n1) Password must be 8 - 12 characters\n2) Must contain at least one capital letter\n3) Must contain a number\n4) Must contain a special character\n =================================")
+                    password = input("Please enter password: ")
+                    first = input("Please enter your first name: ")
+                    last = input("Please enter your last name: ")
+                    university = input("Please enter your university: ")
+                    major = input("Please enter your major: ")
+                    has_email = True
+                    has_sms = True
+                    has_ad = True
+                    if self.validUser(userID, password):
+                        print("\nYour username is unique and the password meets all the requirements.\n")
 
-                    self.userID = userID
-                    self.first = first
-                    self.last = last
-                    self.loggedIn = True
-                    self.Email = True
-                    self.SMS = True
-                    self.Ads = True
-                    self.Language = "English"
-                    
-                    print(f"\nWelcome, {self.userID}. You have successfully logged in.\n")
-                    break
-                else:
-                    print("\nYour username is already taken or the password doesn't meet requirements. Please start over\n")
+                        # Connect to the database
+                        with psycopg2.connect(dbname= self.DATABASE_NAME, user= self.DATABASE_USER, password= self.DATABASE_PASSWORD, host= self.DATABASE_HOST, port= self.DATABASE_PORT) as connection:
+                            with connection.cursor() as cursor:
+                                # Insert Data into users table
+                                insert_query = """
+                                INSERT INTO users (user_id, password, first_name, last_name, has_email, has_sms, has_ad, university, major)
+                                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);
+                                """
+                                cursor.execute(insert_query, (userID, password, first, last, has_email, has_sms, has_ad, university, major))
+
+                        print("\n============================\n")
+                        print("Thank you for creating an account.")
+
+                        self.userID = userID
+                        self.first = first
+                        self.last = last
+                        self.loggedIn = True
+                        self.Email = True
+                        self.SMS = True
+                        self.Ads = True
+                        self.Language = "English"
+                        
+                        print(f"\nWelcome, {self.userID}. You have successfully logged in.\n")
+                        break
+                    else:
+                        print("\nYour username is already taken or the password doesn't meet requirements. Please start over\n")
+        
+        except Exception as e:
+            print(f"An error occurred: {e}")
 
     def signInOrUp(self):
         """
@@ -705,3 +733,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
