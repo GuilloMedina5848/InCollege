@@ -277,15 +277,21 @@ class InCollegeServer():
         first_name = input("Enter the user's first name: ")
         last_name = input("Enter the user's last name: ")
 
-        found = False
-        for line in self.userList:
-            stored_first_name, stored_last_name = line[3], line[4]
-            if first_name.lower() == stored_first_name.lower() and last_name.lower() == stored_last_name.lower():
-                print("\nThey are a part of the InCollege system.\n")
-                found = True
-                break
-        if not found:
-            print("\nThey are not yet a part of the InCollege system yet.\n")
+        # Connect to the database
+        with psycopg2.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+            with connection.cursor() as cursor:
+                # Query to search for the user based on the provided first and last names
+                search_query = """
+                SELECT * FROM users WHERE lower(first_name) = %s AND lower(last_name) = %s;
+                """
+                cursor.execute(search_query, (first_name.lower(), last_name.lower()))
+
+                user = cursor.fetchone()
+
+                if user:
+                    print("\nThey are a part of the InCollege system.\n")
+                else:
+                    print("\nThey are not yet a part of the InCollege system.\n")
 
     # Fixed
     def changePreference(self, preference, setting):
