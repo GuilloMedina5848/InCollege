@@ -295,13 +295,16 @@ class InCollegeServer():
 
     # Fixed
     def changePreference(self, preference, setting):
-        # Mapping of preference to its corresponding index in the file
-        preference_map = {
-            "Email": 5,
-            "SMS": 6,
-            "Ads": 7,
-            "Language": 8
+        # Define a mapping of preference names to database column names
+        column_map = {
+            "Email": "has_email",
+            "SMS": "has_sms",
+            "Ads": "has_ad",
+            "Language": "language"
         }
+
+        # Use the mapped column name
+        column_name = column_map.get(preference)
 
         # Update class attributes
         if preference in ["Email", "SMS", "Ads"]:
@@ -309,18 +312,14 @@ class InCollegeServer():
         elif preference == "Language":
             self.Language = setting
 
-        # Update the user's preference in the file
-        updated_file_content = []
-        with open(self.usersFilename, "r") as file:
-            for line in file:
-                parts = line.strip().split(',')
-                if parts[1] == self.userID:
-                    parts[preference_map[preference]] = str(setting)  # Ensure setting is a string before assignment
-                updated_file_content.append(','.join(parts))
-
-        with open(self.usersFilename, "w") as file:
-            file.write('\n'.join(updated_file_content) + '\n')  # Ensure there's a newline character at the end
-
+        # Connect to the database and execute the UPDATE statement
+        with psycopg2.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+            with connection.cursor() as cursor:
+                # Update the user's preference in the database
+                update_query = f"""
+                UPDATE users SET {column_name} = %s WHERE user_id = %s;
+                """
+                cursor.execute(update_query, (setting, self.userID))
 
     def changeLanguage(self):
         print("\nCurrent Language: " + self.Language + "\n")
