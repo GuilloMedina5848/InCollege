@@ -32,6 +32,35 @@ How to export and share a database dump:
     In my machine, I use:
         pg_dump -U postgres -h localhost -p 5432 -W -F c -b -v -f "E:/SoftwareEngineeringCode/InCollege/incollegedb.backup" incollegedb
 ------------------------------------------------------------------------------------------------------
+How to connect to the databas:
+    
+    with psycopg2.connect(dbname= self.DATABASE_NAME, user= self.DATABASE_USER, password= self.DATABASE_PASSWORD, host= self.DATABASE_HOST, port= self.DATABASE_PORT) as connection:
+        with connection.cursor() as cursor:
+            # Insert Data into users table
+            insert_query = """
+            INSERT INTO users (user_id, password, first_name, last_name, has_email, has_sms, has_ad, university, major)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);
+            """
+            cursor.execute(insert_query, (userID, password, first, last, has_email, has_sms, has_ad, university, major))
+
+------------------------------------------------------------------------------------------------------
+How to connect to the database and reference the columns by their names:
+    with psycopg2.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+        with connection.cursor(cursor_factory=DictCursor) as cursor:
+            # Fetch user details from the database
+            cursor.execute("SELECT * FROM users WHERE user_id = %s AND password = %s", (existingUserID, existingPassword))
+            user = cursor.fetchone()
+    if user: # note 'user_id' and 'first_name', etc are columns name
+        self.userID = user['user_id']
+        self.firstName = user['first_name']
+        self.lastName = user['last_name']
+        self.Email = user['has_email']
+        self.SMS = user['has_sms']
+        self.Ads = user['has_ad']
+        self.Language = user['language']
+        self.loggedIn = True
+
+------------------------------------------------------------------------------------------------------
 Database Schemas:
 CREATE TABLE users (
     user_id VARCHAR(255) PRIMARY KEY,

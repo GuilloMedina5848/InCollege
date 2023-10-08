@@ -1,6 +1,7 @@
 import re
 from InquirerPy import prompt
 import psycopg2
+from psycopg2.extras import DictCursor
 
 # Connect to your PostgreSQL server
 DATABASE_NAME = "incollegedb"
@@ -146,21 +147,29 @@ class InCollegeServer():
         while True:
             existingUserID = input("Please enter UserID: ")
             existingPassword = input("Please enter password: ")
-            for line in self.userList:
-                if line[1] == existingUserID and line[2] == existingPassword:
-                    self.userID = existingUserID
-                    self.firstName = line[3]
-                    self.lastName = line[4]
-                    self.Email = line[5] == 'True'
-                    self.SMS = line[6] == 'True'
-                    self.Ads = line[7] == 'True'
-                    self.Language = line[8].strip('\n')
-                    self.loggedIn = True
-                    print(
-                        f"\nWelcome, {existingUserID}. You have successfully logged in.")
-                    
-                    return # existingUserID, Email == 'True', SMS == 'True', Ads == 'True', Language
-            print("\nIncorrect username / password, please try again\n")
+            # Connect to the database
+            with psycopg2.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+                with connection.cursor(cursor_factory=DictCursor) as cursor:
+                    # Fetch user details from the database
+                    cursor.execute("SELECT * FROM users WHERE user_id = %s AND password = %s", (existingUserID, existingPassword))
+                    user = cursor.fetchone()
+
+            # Check if the user exists in the database
+            if user:
+                self.userID = user['user_id']
+                self.firstName = user['first_name']
+                self.lastName = user['last_name']
+                self.Email = user['has_email']
+                self.SMS = user['has_sms']
+                self.Ads = user['has_ad']
+                self.Language = user['language']
+                self.loggedIn = True
+
+                print(f"\nWelcome, {existingUserID}. You have successfully logged in.")
+                return
+            
+            else:
+                print("\nIncorrect username / password, please try again\n")
 
     def signUp(self):
         try: 
