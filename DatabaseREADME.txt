@@ -1,13 +1,23 @@
 incollegedb.backup is the backup database file created using 'pg_dump'
 How to restore the database in your local machine:
-    Enter the 'psql' interface
-    1. Create a new Database: 
-        (It's a good idea to restore the backup into a fresh database. 
-        I recommend you create a new database called incollegedb)
-            # createdb -U postgres incollegedb
-    2. Restore the backup:
-            # pg_restore -U postgres -h localhost -p 5432 -d incollegedb -F c "path_to_incollegedb.backup"
+    Prerequisites: Make sure you have PostgreSQL and its utilities (psql, createdb, pg_restore) installed on your local machine.
     
+    0. Access the Terminal or Command Prompt:
+    Open a terminal (Linux/Mac) or Command Prompt (Windows). 
+    On Windows, you might need to use the PostgreSQL command prompt which gets installed with the PostgreSQL installation.
+    1. Enter the 'psql' interface:
+            # psql -U postgres
+    2. Create a new Database: 
+        It's recommended to restore the backup into a fresh database to avoid potential conflicts with existing data. 
+        You can create a new database, preferably named incollegedb
+            # createdb -U postgres incollegedb
+    3. Exit 'psql':
+            # \q
+    4. Restore the backup:
+            # pg_restore -U postgres -h localhost -p 5432 -d incollegedb -F c "path_to_incollegedb.backup"
+    5. Verify Restoration:
+            # psql -U postgres incollegedb
+
     -U postgres: Specifies the user (in this case, "postgres").
     -h localhost: Specifies the host (in this case, "localhost").
     -p 5432: Specifies the port (in this case, "5432").
