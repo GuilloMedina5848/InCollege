@@ -45,11 +45,8 @@ class InCollegeServer():
     Ads = True
     Language = "English"
 
-
-    jobsList = []
     maxJobs = 5
 
-    userList = []
     maxUsers = 10
 
     def validUser(self, UserID, password):
@@ -57,9 +54,19 @@ class InCollegeServer():
         Checks if the provided UserID is unique
         Check if the provided password meets certain requirements
         """
-        for line in self.userList:
-            if line[1] == UserID:
-                return False
+        with psycopg2.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+            with connection.cursor() as cursor:
+                search_query = f"""
+                SELECT user_id
+                FROM users
+                WHERE user_id = %s;
+                """
+                cursor.execute(search_query, (UserID,))
+                users = cursor.fetchall()
+
+                if users:
+                    return False
+
         if not (8 <= len(password) <= 12):
             return False
         # Check if the password contains at least one capital letter
