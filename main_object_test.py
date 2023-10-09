@@ -15,7 +15,7 @@ defaultSMSPref = True
 defaultAdsPref = True
 defaultLanguage = "English"
 defaultUserString = f"1,{defaultUser},{defaultPassword},{defaultFirstName},{defaultLastName},{defaultEmailPref},{defaultSMSPref},{defaultAdsPref},{defaultLanguage}\n"
-maxUsers = 5
+maxUsers = 10
 
 jobCopy = ""
 defaultTitle = "pyTester"

@@ -310,17 +310,39 @@ class InCollegeServer():
                         users = cursor.fetchall()
 
                         if users:
-                            for user in users:
-                                print("\nUser found in the InCollege system.\n")
-                                print(f"User ID: {user[0]}, Name: {user[1]} {user[2]}, University: {user[3]}, Major: {user[4]}")
-                                # If logged in, show the option to connect
-                                if self.loggedIn:
-                                    connect_choice = input("Do you want to send this user a request to connect? (yes/no): ").lower()
-                                    if connect_choice == "yes":
-                                        # Handle sending a request
-                                        self.sendConnectRequest(from_user_id = self.userID, to_user_id = user[0])
+                            print("\nUser found in the InCollege system.\n")
+                            # If logged in, show the option to connect
+                            if self.loggedIn:
+                                prompts = []
+                                ids = []
+                                for user in users:
+                                    ids.append(user[0])
+                                    prompts.append(f"User ID: {user[0]}, Name: {user[1]} {user[2]}, University: {user[3]}, Major: {user[4]}")
+                                prompts.append("Go back.")
+                                try:
+                                    choice_response = prompt({
+                                        "type": "list",
+                                        "message": "Users:",
+                                        "choices": prompts
+                                    })
+                                    if choice_response[0] == "Go back.":
+                                        break
+                                    elif choice_response[0] in prompts:
+                                        connect_choice = input("Do you want to send this user a request to connect? (yes/no): ").lower()
+                                        if connect_choice == "yes":
+                                            # Handle sending a request
+                                            self.sendConnectRequest(from_user_id = self.userID, to_user_id = ids[prompts.index(choice_response[0])])
+                                        else:
+                                            print("Request not sent.")
                                     else:
-                                        print("Request not sent.")
+                                        raise ValueError
+                                except ValueError:
+                                    print("Invalid choice, please try again.\n")
+                                
+                            else:
+                                for user in users:
+                                    print(f"User ID: {user[0]}, Name: {user[1]} {user[2]}, University: {user[3]}, Major: {user[4]}")
+                                
                         else:
                             print(f"\nNo user found with {choice}: {search_criteria}.\n")
 
