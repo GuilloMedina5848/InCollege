@@ -61,6 +61,11 @@ How to connect to the database and reference the columns by their names:
         self.loggedIn = True
 
 ------------------------------------------------------------------------------------------------------
+DATABASE_NAME = "incollegedb"
+DATABASE_USER = "postgres"
+DATABASE_PASSWORD = "postgres"
+DATABASE_HOST = "localhost" 
+DATABASE_PORT = "5432"
 Database Schemas:
 CREATE TABLE users (
     user_id VARCHAR(255) PRIMARY KEY,
