@@ -1,7 +1,7 @@
 import re
 from InquirerPy import prompt
-import psycopg2
-from psycopg2.extras import DictCursor
+import psycopg
+from psycopg.rows import dict_row
 
 # Connect to your PostgreSQL server
 DATABASE_NAME = "incollegedb"
@@ -11,7 +11,7 @@ DATABASE_HOST = "localhost"
 DATABASE_PORT = "5432"  # default PostgreSQL port
 
 # Connect to the database
-with psycopg2.connect(dbname=DATABASE_NAME, user=DATABASE_USER, password=DATABASE_PASSWORD, host=DATABASE_HOST, port=DATABASE_PORT) as connection:
+with psycopg.connect(dbname=DATABASE_NAME, user=DATABASE_USER, password=DATABASE_PASSWORD, host=DATABASE_HOST, port=DATABASE_PORT) as connection:
     with connection.cursor() as cursor:
         try:
             cursor.execute("""SELECT schemaname, tablename 
@@ -54,7 +54,7 @@ class InCollegeServer():
         Checks if the provided UserID is unique
         Check if the provided password meets certain requirements
         """
-        with psycopg2.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
             with connection.cursor() as cursor:
                 search_query = f"""
                 SELECT user_id
@@ -95,7 +95,7 @@ class InCollegeServer():
         Allows a logged-in user to post a job.
         """
         # Connect to the database
-        with psycopg2.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
             with connection.cursor() as cursor:
                 # Get the number of jobs in the database
                 cursor.execute("SELECT COUNT(*) FROM jobs;")
@@ -122,7 +122,7 @@ class InCollegeServer():
         # saveJobs(jobsList)
 
         # Connect to the database
-        with psycopg2.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
             with connection.cursor() as cursor:
                 # Insert job details into the jobs table
                 insert_query = """
@@ -141,8 +141,8 @@ class InCollegeServer():
             existingUserID = input("Please enter UserID: ")
             existingPassword = input("Please enter password: ")
             # Connect to the database
-            with psycopg2.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
-                with connection.cursor(cursor_factory=DictCursor) as cursor:
+            with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+                with connection.cursor(row_factory=dict_row) as cursor:
                     # Fetch user details from the database
                     cursor.execute("SELECT * FROM users WHERE user_id = %s AND password = %s", (existingUserID, existingPassword))
                     user = cursor.fetchone()
@@ -167,7 +167,7 @@ class InCollegeServer():
     def signUp(self):
         try:
         # Connect to the database
-            with psycopg2.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+            with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
                 with connection.cursor() as cursor:
                     # Get the number of users in the database
                     cursor.execute("SELECT COUNT(*) FROM users;")
@@ -197,7 +197,7 @@ class InCollegeServer():
                         print("\nYour username is unique and the password meets all the requirements.\n")
 
                         # Connect to the database
-                        with psycopg2.connect(dbname= self.DATABASE_NAME, user= self.DATABASE_USER, password= self.DATABASE_PASSWORD, host= self.DATABASE_HOST, port= self.DATABASE_PORT) as connection:
+                        with psycopg.connect(dbname= self.DATABASE_NAME, user= self.DATABASE_USER, password= self.DATABASE_PASSWORD, host= self.DATABASE_HOST, port= self.DATABASE_PORT) as connection:
                             with connection.cursor() as cursor:
                                 # Insert Data into users table
                                 insert_query = """
@@ -304,7 +304,7 @@ class InCollegeServer():
                 search_criteria = input(prompt_message)
 
                  # Connect to the database
-                with psycopg2.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+                with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
                     with connection.cursor() as cursor:
                         # Construct the query based on the chosen option
                         search_query = f"""
@@ -376,7 +376,7 @@ class InCollegeServer():
             self.Language = setting
 
         # Connect to the database and execute the UPDATE statement
-        with psycopg2.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
             with connection.cursor() as cursor:
                 # Update the user's preference in the database
                 update_query = f"""
@@ -828,7 +828,7 @@ class InCollegeServer():
     
     def sendConnectRequest(self, from_user_id, to_user_id):
         # Connect to the database
-        with psycopg2.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
             with connection.cursor() as cursor:
                 # Check if there's already a request or friendship between these two users
                 check_query = """
@@ -857,7 +857,7 @@ class InCollegeServer():
         print(f"Connection request sent to user {to_user_id}!")
     
     def checkPendingRequests(self):
-        with psycopg2.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
             with connection.cursor() as cursor:
                 fetch_query = """
                 SELECT student1_id 
@@ -875,7 +875,7 @@ class InCollegeServer():
         
     def handleFriendRequest(self, from_user_id):
         # Fetch the name of the person who sent the request for better UI
-        with psycopg2.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
             with connection.cursor() as cursor:
                 name_query = """
                 SELECT first_name, last_name 
@@ -889,7 +889,7 @@ class InCollegeServer():
 
         choice = input("Do you want to accept this friend request? (yes/no): ").lower()
 
-        with psycopg2.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
             with connection.cursor() as cursor:
                 if choice == 'yes':
                     # Update the friendship status to confirmed
@@ -911,7 +911,7 @@ class InCollegeServer():
 
 
     def viewPendingRequests(self):
-        with psycopg2.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
             with connection.cursor() as cursor:
                 fetch_query = """
                 SELECT student1_id, first_name, last_name 
@@ -929,7 +929,7 @@ class InCollegeServer():
             print("\nYou have no pending friend requests.")
 
     def viewConnectedFriends(self):
-        with psycopg2.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
             with connection.cursor() as cursor:
                 # Get friends where the current user is student1
                 fetch_query_1 = """
@@ -960,7 +960,7 @@ class InCollegeServer():
     def disconnectFriend(self):
         friend_id = input("Enter the User ID of the connection you want to disconnect from: ")
 
-        with psycopg2.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
             with connection.cursor() as cursor:
                 # Check if the given user_id exists in the friend's list
                 check_query = """
