@@ -126,10 +126,10 @@ class InCollegeServer():
             with connection.cursor() as cursor:
                 # Insert job details into the jobs table
                 insert_query = """
-                INSERT INTO jobs (title, description, employer, location, salary, user_id)
-                VALUES (%s, %s, %s, %s, %s, %s);
+                INSERT INTO jobs (title, description, employer, location, salary, user_id, first_name, last_name)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
                 """
-                cursor.execute(insert_query, (title, description, employer, location, salary, self.userID))
+                cursor.execute(insert_query, (title, description, employer, location, salary, self.userID, self.firstName, self.lastName))
 
         print("\nJob posted successfully!")
 
