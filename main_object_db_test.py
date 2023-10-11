@@ -29,12 +29,13 @@ defaultDescription = "testsPython"
 defaultEmployer = "pyTest"
 defaultLocation = "pyTest"
 defaultSalary = "0"
-defaultJobTuple = (1, defaultFirstName, defaultLastName, defaultTitle, defaultDescription, defaultEmployer, defaultLocation, defaultSalary)
+defaultJobTuple = (1, defaultTitle, defaultDescription, defaultEmployer, defaultLocation, defaultSalary, defaultUser, defaultFirstName, defaultLastName)
 defaultJobTable = [[defaultJobTuple]]
 maxJobs = 5
 
 tables = ["jobs", "friendships", "users"] # this needs to be in an order such that the tables with linked keys are deleted first
 dbbackup = []
+increment = 0
 
 DATABASE_NAME = "incollegedb"
 DATABASE_USER = "postgres"
@@ -43,14 +44,21 @@ DATABASE_HOST = "localhost"
 DATABASE_PORT = "5432"
 
 def backup():
-    global dbbackup
+    global dbbackup, increment
     with psycopg.connect(dbname=DATABASE_NAME, user=DATABASE_USER, password=DATABASE_PASSWORD, host=DATABASE_HOST, port=DATABASE_PORT) as connection:
         with connection.cursor() as cursor:
+            cursor.execute(f"""SELECT 'AUTO_INCREMENT'
+                              FROM  INFORMATION_SCHEMA.TABLES
+                              WHERE TABLE_SCHEMA = '{DATABASE_NAME}'
+                              AND   TABLE_NAME   = 'jobs';""")
+            increment = cursor.fetchone()
+
             for table in tables:
                 try:
                     cursor.execute(f"""SELECT *
                                     FROM {table}""")
                     dbbackup.append(cursor.fetchall())
+                    
                 except Exception as e:
                     print(f"Error executing query: {e}")
 
@@ -62,6 +70,7 @@ def clear():
                     cursor.execute(f"""DELETE FROM {table}""")
                 except Exception as e:
                     print(f"Error executing query: {e}")
+            cursor.execute("""ALTER SEQUENCE jobs_job_id_seq RESTART WITH 1""")
 
 def restore():
     clear()
@@ -78,6 +87,7 @@ def restore():
                     except Exception as e:
                         print(f"Error executing query: {e}")
                 i += 1
+            cursor.execute(f"""ALTER SEQUENCE jobs_job_id_seq RESTART WITH {increment}""")
 
 # function to start tests which require an existing user to be able to log in
 # don't use this function unless you need an existing user! start the function with clear() instead
