@@ -223,10 +223,32 @@ def test_mainScreenSearchUserByLastName(monkeypatch, capsys):
           in capsys.readouterr().out
 
 def test_mainScreenSearchUserByUniversity(monkeypatch, capsys):
-   assert False
+  addTestUser()
+
+  prompts = iter([{0: 'To Find an Existing User'}, {0: 'University'}, {0: 'Exit'}, {0: 'Exit'}])
+  monkeypatch.setattr(promptModule, lambda _: next(prompts))
+
+  inputs = iter([defaultUniversity])
+  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+  InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
+
+  assert f"User found in the InCollege system.\n\nUser ID: {defaultUser}, Name: {defaultFirstName} {defaultLastName}, University: {defaultUniversity}, Major: {defaultMajor}"\
+          in capsys.readouterr().out
 
 def test_mainScreenSearchUserByMajor(monkeypatch, capsys):
-   assert False
+  addTestUser()
+
+  prompts = iter([{0: 'To Find an Existing User'}, {0: 'Major'}, {0: 'Exit'}, {0: 'Exit'}])
+  monkeypatch.setattr(promptModule, lambda _: next(prompts))
+
+  inputs = iter([defaultMajor])
+  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+  InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
+
+  assert f"User found in the InCollege system.\n\nUser ID: {defaultUser}, Name: {defaultFirstName} {defaultLastName}, University: {defaultUniversity}, Major: {defaultMajor}"\
+          in capsys.readouterr().out
 
 # tests main screen existing user search with name that is not registered with inCollege
 def test_mainScreenSearchInvalidUser(monkeypatch, capsys):
@@ -861,11 +883,58 @@ def test_newConnectionRequest(monkeypatch, capsys):
 def test_receiveConnectionRequestOnLogin(monkeypatch, capsys):
   assert False
 
+def test_disconnectFromConnectionEmpty(monkeypatch, capsys):
+  addTestUser()
+
+  prompts = iter([{0: 'For Existing Users'}, {0: 'Disconnect from a Connection'}, {0: 'Log out'}, {0: 'Exit'}])
+  monkeypatch.setattr(promptModule, lambda _: next(prompts))
+
+  inputs = iter([defaultUser, defaultPassword, 'no'])
+  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+  InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
+
+  assert f"The given user is not in your connection list." in capsys.readouterr().out
+
 def test_disconnectFromConnection(monkeypatch, capsys):
-  assert False
+  addTestUser()
+  # Need to write to the database to add a connection
+  prompts = iter([{0: 'For Existing Users'}, {0: 'Disconnect from a Connection'}, {0: 'Log out'}, {0: 'Exit'}])
+  monkeypatch.setattr(promptModule, lambda _: next(prompts))
+
+  inputs = iter([defaultUser, defaultPassword, 'no'])
+  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+  InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
+
+  assert f"Successfully disconnected!" in capsys.readouterr().out 
+
+def test_showMyNetworkEmpty(monkeypatch, capsys):
+  addTestUser()
+
+  prompts = iter([{0: 'For Existing Users'}, {0: 'Show my Network'}, {0: 'Log out'}, {0: 'Exit'}])
+  monkeypatch.setattr(promptModule, lambda _: next(prompts))
+
+  inputs = iter([defaultUser, defaultPassword, 'no'])
+  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+  InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
+
+  assert f"You have no connections in the system." in capsys.readouterr().out
 
 def test_showMyNetwork(monkeypatch, capsys):
-  assert False
+  addTestUser()
+  # Need to write to the database to add a connection
+  prompts = iter([{0: 'For Existing Users'}, {0: 'Show my Network'}, {0: 'Log out'}, {0: 'Exit'}])
+  monkeypatch.setattr(promptModule, lambda _: next(prompts))
+
+  inputs = iter([defaultUser, defaultPassword, 'no'])
+  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+  InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
+
+  assert f"List of Friends: \n User ID: {defaultUser}, Name: {defaultFirstName}."\
+       in capsys.readouterr().out
 
 # workaround for pytest terminating after the last test function; userPaste needs to be called to recover the original data in Users.txt
 
