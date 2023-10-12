@@ -10,6 +10,48 @@ DATABASE_PASSWORD_ = "postgres"
 DATABASE_HOST_ = "localhost" 
 DATABASE_PORT_ = "5432"  # default PostgreSQL port
 
+# If the database doesn't exist, create it
+# Should put this function in a module and import it here/to the test
+
+def createDatabase():
+    with psycopg.connect(user=DATABASE_USER_, password=DATABASE_PASSWORD_) as connection:
+       connection._set_autocommit(True)
+       with connection.cursor() as cursor:
+          cursor.execute(f"""CREATE DATABASE {DATABASE_NAME_};""")
+    with psycopg.connect(dbname=DATABASE_NAME_, user=DATABASE_USER_, password=DATABASE_PASSWORD_, host=DATABASE_HOST_, port=DATABASE_PORT_) as connection:
+        with connection.cursor() as cursor:
+          cursor.execute("""CREATE TABLE users (
+                              user_id VARCHAR(255) PRIMARY KEY,
+                              password TEXT NOT NULL,
+                              first_name VARCHAR(255) NOT NULL,
+                              last_name VARCHAR(255) NOT NULL,
+                              has_email BOOLEAN DEFAULT TRUE,
+                              has_sms BOOLEAN DEFAULT TRUE,
+                              has_ad BOOLEAN DEFAULT TRUE,
+                              language VARCHAR(255) DEFAULT 'English',
+                              university VARCHAR(255),
+                              major VARCHAR(255)
+                          );
+
+                          CREATE TABLE jobs (
+                              job_id SERIAL PRIMARY KEY,
+                              user_id VARCHAR(255) REFERENCES users(user_id),
+                              title VARCHAR(255) NOT NULL,
+                              description TEXT,
+                              employer VARCHAR(255) NOT NULL,
+                              location VARCHAR(255) NOT NULL,
+                              salary DECIMAL,
+                              first_name VARCHAR(255),
+                              last_name VARCHAR(255)
+                          );
+
+                          CREATE TABLE friendships (
+                              friendship_id SERIAL PRIMARY KEY,
+                              student1_id VARCHAR(255) REFERENCES users(user_id),
+                              student2_id VARCHAR(255) REFERENCES users(user_id),
+                              status TEXT CHECK (status IN ('pending', 'confirmed'))
+                          );""")
+
 class InCollegeServer():
     DATABASE_NAME = ""
     DATABASE_USER = ""
@@ -974,6 +1016,12 @@ class InCollegeServer():
         self.loginScreen()
 
 def main():
+    try:
+        psycopg.connect(dbname=DATABASE_NAME_, user=DATABASE_USER_, password=DATABASE_PASSWORD_, host=DATABASE_HOST_, port=DATABASE_PORT_)
+    except:
+        print(f"Could not connect to database {DATABASE_NAME_}. Creating it locally...")
+        createDatabase()
+    
     InCollegeServer()
 
 if __name__ == "__main__":
