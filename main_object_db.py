@@ -4,36 +4,18 @@ import psycopg
 from psycopg.rows import dict_row
 
 # Connect to your PostgreSQL server
-DATABASE_NAME = "incollegedb"
-DATABASE_USER = "postgres"
-DATABASE_PASSWORD = "postgres"
-DATABASE_HOST = "localhost" 
-DATABASE_PORT = "5432"  # default PostgreSQL port
-
-# Connect to the database
-with psycopg.connect(dbname=DATABASE_NAME, user=DATABASE_USER, password=DATABASE_PASSWORD, host=DATABASE_HOST, port=DATABASE_PORT) as connection:
-    with connection.cursor() as cursor:
-        try:
-            cursor.execute("""SELECT schemaname, tablename 
-                            FROM pg_tables
-                            WHERE schemaname NOT IN ('pg_catalog', 'information_schema');""")
-            tables = cursor.fetchall()
-
-            if not tables:
-                print("No tables found.")
-            else:
-                for schema, table in tables:
-                    print(f"{schema}.{table}")
-
-        except Exception as e:
-            print(f"Error executing query: {e}")
+DATABASE_NAME_ = "incollegedb"
+DATABASE_USER_ = "postgres"
+DATABASE_PASSWORD_ = "postgres"
+DATABASE_HOST_ = "localhost" 
+DATABASE_PORT_ = "5432"  # default PostgreSQL port
 
 class InCollegeServer():
-    DATABASE_NAME = "incollegedb"
-    DATABASE_USER = "postgres"
-    DATABASE_PASSWORD = "postgres"
-    DATABASE_HOST = "127.0.0.1" 
-    DATABASE_PORT = "5432"  # default PostgreSQL port
+    DATABASE_NAME = ""
+    DATABASE_USER = ""
+    DATABASE_PASSWORD = ""
+    DATABASE_HOST = ""
+    DATABASE_PORT = ""
 
     loggedIn = False
     userID = ""
@@ -983,9 +965,13 @@ class InCollegeServer():
 
 
 
-    def __init__(self):
+    def __init__(self, databaseName = DATABASE_NAME_, databaseUser = DATABASE_USER_, databasePassword = DATABASE_PASSWORD_, databaseHost = DATABASE_HOST_, databasePort = DATABASE_PORT_):
+        self.DATABASE_NAME = databaseName
+        self.DATABASE_USER = databaseUser
+        self.DATABASE_PASSWORD = databasePassword
+        self.DATABASE_HOST = databaseHost
+        self.DATABASE_PORT = databasePort
         self.loginScreen()
-
 
 def main():
     InCollegeServer()
