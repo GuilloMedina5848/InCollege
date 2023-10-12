@@ -2,6 +2,8 @@ import main_object_db
 from main_object_db import DATABASE_NAME_, InCollegeServer
 import pytest, psycopg
 
+# TODO: update comments to reflect change from .txt file to database
+
 # these functions are for managing the Users.txt file; we don't want the file to be altered in any way after the tests are completed and we don't want the test output to rely on the existing file being in a certain state.
 # so we start by saving the Users.txt contents to a string and erasing it. At the start of every test, we erase it again (to clear any alterations from previous tests) and the final test (see test_dummy) writes the string back to the Users.txt file
 
@@ -878,10 +880,43 @@ def test_language(monkeypatch, capsys):
 ###########
 
 def test_newConnectionRequest(monkeypatch, capsys):
-  assert False
+  addTestUser(2)
+
+  prompts = iter([{0: 'For Existing Users'}, {0: 'Find someone you know'}, {0: 'Last Name'}, {0: f'User ID: {defaultUser+"1"}, Name: {defaultFirstName} {defaultLastName}, University: {defaultUniversity}, Major: {defaultMajor}'}, {0: 'Exit'}, {0: 'Log out'}, {0: 'Exit'}])
+  monkeypatch.setattr(promptModule, lambda _: next(prompts))
+
+  inputs = iter([defaultUser, defaultPassword, defaultLastName, 'yes'])
+  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+  InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
+
+  assert f"Connection request sent to user {defaultUser+'1'}!" in capsys.readouterr().out
+  assert readDB("friendships")[0][0][3] == 'pending'
 
 def test_receiveConnectionRequestOnLogin(monkeypatch, capsys):
-  assert False
+  addTestUser(2)
+
+  connections = [[(1, defaultUser+'1', defaultUser, 'pending')]]
+
+  with psycopg.connect(dbname=DATABASE_TEST_NAME, user=DATABASE_USER, password=DATABASE_PASSWORD, host=DATABASE_HOST, port=DATABASE_PORT) as connection:
+    with connection.cursor() as cursor:
+      try:
+        with cursor.copy("COPY friendships FROM STDIN") as copy:
+          for connection in connections[0]:
+            copy.write_row(connection)
+      except Exception as e:
+          print(f"Error executing query: {e}")
+
+  prompts = iter([{0: 'For Existing Users'}, {0: 'Log out'}, {0: 'Exit'}])
+  monkeypatch.setattr(promptModule, lambda _: next(prompts))
+
+  inputs = iter([defaultUser, defaultPassword, 'yes'])
+  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+  InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
+
+  assert "Friend request accepted!" in capsys.readouterr().out
+  assert readDB("friendships")[0][0][3] == 'confirmed'
 
 def test_disconnectFromConnectionEmpty(monkeypatch, capsys):
   addTestUser()
@@ -889,7 +924,7 @@ def test_disconnectFromConnectionEmpty(monkeypatch, capsys):
   prompts = iter([{0: 'For Existing Users'}, {0: 'Disconnect from a Connection'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
-  inputs = iter([defaultUser, defaultPassword, 'no'])
+  inputs = iter([defaultUser, defaultPassword, defaultUser])
   monkeypatch.setattr('builtins.input', lambda _: next(inputs))
 
   InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
@@ -897,12 +932,23 @@ def test_disconnectFromConnectionEmpty(monkeypatch, capsys):
   assert f"The given user is not in your connection list." in capsys.readouterr().out
 
 def test_disconnectFromConnection(monkeypatch, capsys):
-  addTestUser()
-  # Need to write to the database to add a connection
+  addTestUser(2)
+  
+  connections = [[(1, defaultUser, defaultUser+'1', 'confirmed')]]
+
+  with psycopg.connect(dbname=DATABASE_TEST_NAME, user=DATABASE_USER, password=DATABASE_PASSWORD, host=DATABASE_HOST, port=DATABASE_PORT) as connection:
+    with connection.cursor() as cursor:
+      try:
+        with cursor.copy("COPY friendships FROM STDIN") as copy:
+          for connection in connections[0]:
+            copy.write_row(connection)
+      except Exception as e:
+          print(f"Error executing query: {e}")
+
   prompts = iter([{0: 'For Existing Users'}, {0: 'Disconnect from a Connection'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
-  inputs = iter([defaultUser, defaultPassword, 'no'])
+  inputs = iter([defaultUser, defaultPassword, defaultUser+'1'])
   monkeypatch.setattr('builtins.input', lambda _: next(inputs))
 
   InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
@@ -911,11 +957,11 @@ def test_disconnectFromConnection(monkeypatch, capsys):
 
 def test_showMyNetworkEmpty(monkeypatch, capsys):
   addTestUser()
-
+  
   prompts = iter([{0: 'For Existing Users'}, {0: 'Show my Network'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
-  inputs = iter([defaultUser, defaultPassword, 'no'])
+  inputs = iter([defaultUser, defaultPassword])
   monkeypatch.setattr('builtins.input', lambda _: next(inputs))
 
   InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
@@ -923,17 +969,28 @@ def test_showMyNetworkEmpty(monkeypatch, capsys):
   assert f"You have no connections in the system." in capsys.readouterr().out
 
 def test_showMyNetwork(monkeypatch, capsys):
-  addTestUser()
-  # Need to write to the database to add a connection
+  addTestUser(2)
+
+  connections = [[(1, defaultUser, defaultUser+'1', 'confirmed')]]
+  
+  with psycopg.connect(dbname=DATABASE_TEST_NAME, user=DATABASE_USER, password=DATABASE_PASSWORD, host=DATABASE_HOST, port=DATABASE_PORT) as connection:
+    with connection.cursor() as cursor:
+      try:
+        with cursor.copy("COPY friendships FROM STDIN") as copy:
+          for connection in connections[0]:
+            copy.write_row(connection)
+      except Exception as e:
+          print(f"Error executing query: {e}")
+
   prompts = iter([{0: 'For Existing Users'}, {0: 'Show my Network'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
-  inputs = iter([defaultUser, defaultPassword, 'no'])
+  inputs = iter([defaultUser, defaultPassword])
   monkeypatch.setattr('builtins.input', lambda _: next(inputs))
 
   InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
 
-  assert f"List of Friends: \n User ID: {defaultUser}, Name: {defaultFirstName}."\
+  assert f"List of Friends:\nUser ID: {defaultUser+'1'}, Name: {defaultFirstName} {defaultLastName}"\
        in capsys.readouterr().out
 
 # workaround for pytest terminating after the last test function; userPaste needs to be called to recover the original data in Users.txt
