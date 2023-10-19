@@ -1,5 +1,5 @@
-import main_object_db
-from main_object_db import DATABASE_NAME_, InCollegeServer
+import main
+from main import DATABASE_NAME_, InCollegeServer
 import pytest, psycopg
 
 # TODO: update comments to reflect change from .txt file to database
@@ -7,7 +7,7 @@ import pytest, psycopg
 # these functions are for managing the Users.txt file; we don't want the file to be altered in any way after the tests are completed and we don't want the test output to rely on the existing file being in a certain state.
 # so we start by saving the Users.txt contents to a string and erasing it. At the start of every test, we erase it again (to clear any alterations from previous tests) and the final test (see test_dummy) writes the string back to the Users.txt file
 
-sourceFilename = 'main_object_db'
+sourceFilename = 'main'
 promptModule = sourceFilename + '.prompt'
 
 defaultUser = "pyTestUser"
