@@ -1,5 +1,6 @@
-from main import main
+from main_object import *
 import pytest
+
 
 # these functions are for managing the Users.txt file; we don't want the file to be altered in any way after the tests are completed and we don't want the test output to rely on the existing file being in a certain state.
 # so we start by saving the Users.txt contents to a string and erasing it. At the start of every test, we erase it again (to clear any alterations from previous tests) and the final test (see test_dummy) writes the string back to the Users.txt file
@@ -14,7 +15,7 @@ defaultSMSPref = True
 defaultAdsPref = True
 defaultLanguage = "English"
 defaultUserString = f"1,{defaultUser},{defaultPassword},{defaultFirstName},{defaultLastName},{defaultEmailPref},{defaultSMSPref},{defaultAdsPref},{defaultLanguage}\n"
-maxUsers = 5
+maxUsers = 10
 
 jobCopy = ""
 defaultTitle = "pyTester"
@@ -93,7 +94,7 @@ def test_mainScreen(monkeypatch, capsys):
   userClear()
 
   prompts = iter([{0: 'Exit'}])
-  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+  monkeypatch.setattr('main_object.prompt', lambda _: next(prompts))
 
   main()
 
@@ -105,7 +106,7 @@ def test_mainScreenStory(monkeypatch, capsys):
   userClear()
 
   prompts = iter([{0: 'Exit'}])
-  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+  monkeypatch.setattr('main_object.prompt', lambda _: next(prompts))
 
   main()
 
@@ -117,7 +118,7 @@ def test_mainScreenVideo(monkeypatch, capsys):
   userClear()
 
   prompts = iter([{0: 'Learn why you should join InCollege'}, {0: 'Exit'}])
-  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+  monkeypatch.setattr('main_object.prompt', lambda _: next(prompts))
 
   main()
 
@@ -129,7 +130,7 @@ def test_mainScreenSearchUser(monkeypatch, capsys):
   startTest()
 
   prompts = iter([{0: 'To Find an Existing User'}, {0: 'Exit'}])
-  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+  monkeypatch.setattr('main_object.prompt', lambda _: next(prompts))
 
   inputs = iter([defaultFirstName, defaultLastName])
   monkeypatch.setattr('builtins.input', lambda _: next(inputs))
@@ -147,7 +148,7 @@ def test_mainScreenSearchInvalidUser(monkeypatch, capsys):
   for testName in testNames:
 
     prompts = iter([{0: 'To Find an Existing User'}, {0: 'Exit'}])
-    monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+    monkeypatch.setattr('main_object.prompt', lambda _: next(prompts))
 
     inputs = iter([testName[0], testName[1]])
     monkeypatch.setattr('builtins.input', lambda _: next(inputs))
@@ -171,7 +172,7 @@ def test_newUser(monkeypatch, capsys):
   for testUsernamePassword in testUsernamesPasswords:
 
     prompts = iter([{0: 'To Create an Account'}, {0: 'Log out'}, {0: 'Exit'}])
-    monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+    monkeypatch.setattr('main_object.prompt', lambda _: next(prompts))
 
     inputs = iter([testUsernamePassword[0], testUsernamePassword[1], defaultFirstName, defaultLastName])
     monkeypatch.setattr('builtins.input', lambda _: next(inputs))
@@ -193,7 +194,7 @@ def test_newUserInvalidCharacter(monkeypatch, capsys):
   for testPassword in testPasswords:
 
     prompts = iter([{0: 'To Create an Account'}, {0: 'Log out'}, {0: 'Exit'}])
-    monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+    monkeypatch.setattr('main_object.prompt', lambda _: next(prompts))
 
     inputs = iter([defaultUser, testPassword, defaultFirstName, defaultLastName, defaultUser, defaultPassword, defaultFirstName, defaultLastName])
     monkeypatch.setattr('builtins.input', lambda _: next(inputs))
@@ -214,7 +215,7 @@ def test_newUserInvalidLength(monkeypatch, capsys):
     # simulate inputs: choose to create an account, provide a username and the test password, then provide a valid username and password combo to terminate the program
 
     prompts = iter([{0: 'To Create an Account'}, {0: 'Log out'}, {0: 'Exit'}])
-    monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+    monkeypatch.setattr('main_object.prompt', lambda _: next(prompts))
 
     inputs = iter([defaultUser, testPassword, defaultFirstName, defaultLastName, defaultUser, defaultPassword, defaultFirstName, defaultLastName])
     monkeypatch.setattr('builtins.input', lambda _: next(inputs))
@@ -251,7 +252,7 @@ def test_newUserInvalidExisting(monkeypatch, capsys):
   for testUsername in testUsernames:
 
     prompts = iter([{0: 'To Create an Account'}, {0: 'Log out'}, {0: 'Exit'}])
-    monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+    monkeypatch.setattr('main_object.prompt', lambda _: next(prompts))
 
     inputs = iter([testUsername, defaultPassword, defaultFirstName, defaultLastName, defaultUser, defaultPassword, defaultFirstName, defaultLastName])
     monkeypatch.setattr('builtins.input', lambda _: next(inputs))
@@ -275,7 +276,7 @@ def test_newUserExceedsLimit(monkeypatch, capsys):
 
   # create the 6th account
   prompts = iter([{0: 'To Create an Account'}, {0: 'For Existing Users'}, {0: 'Log out'}, {0: 'Exit'}])
-  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+  monkeypatch.setattr('main_object.prompt', lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword])
   monkeypatch.setattr('builtins.input', lambda _: next(inputs))
@@ -314,7 +315,7 @@ def test_loginExistingUser(monkeypatch, capsys):
   for testUsernamePassword in testUsernamesPasswords:
 
     prompts = iter([{0: 'For Existing Users'}, {0: 'Log out'}, {0: 'Exit'}])
-    monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+    monkeypatch.setattr('main_object.prompt', lambda _: next(prompts))
 
     inputs = iter([testUsernamePassword[0], testUsernamePassword[1], defaultFirstName, defaultLastName])
     monkeypatch.setattr('builtins.input', lambda _: next(inputs))
@@ -332,7 +333,7 @@ def test_loginInvalidUsername(monkeypatch, capsys):
   for testUsername in testUsernames:
 
     prompts = iter([{0: 'For Existing Users'}, {0: 'Log out'}, {0: 'Exit'}])
-    monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+    monkeypatch.setattr('main_object.prompt', lambda _: next(prompts))
 
     inputs = iter([testUsername, defaultPassword, defaultUser, defaultPassword])
     monkeypatch.setattr('builtins.input', lambda _: next(inputs))
@@ -351,7 +352,7 @@ def test_loginInvalidPassword(monkeypatch, capsys):
   for testPassword in testPasswords:
 
     prompts = iter([{0: 'For Existing Users'}, {0: 'Log out'}, {0: 'Exit'}])
-    monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+    monkeypatch.setattr('main_object.prompt', lambda _: next(prompts))
 
     inputs = iter([defaultUser, "invalidPassword%", defaultUser, defaultPassword])
     monkeypatch.setattr('builtins.input', lambda _: next(inputs))
@@ -366,7 +367,7 @@ def test_searchUser(monkeypatch, capsys):
   startTest()
 
   prompts = iter([{0: 'For Existing Users'}, {0: 'Find someone you know'}, {0: 'Log out'}, {0: 'Exit'}])
-  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+  monkeypatch.setattr('main_object.prompt', lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword, defaultFirstName, defaultLastName])
   monkeypatch.setattr('builtins.input', lambda _: next(inputs))
@@ -384,7 +385,7 @@ def test_searchInvalidUser(monkeypatch, capsys):
   for testName in testNames:
 
     prompts = iter([{0: 'For Existing Users'}, {0: 'Find someone you know'}, {0: 'Log out'}, {0: 'Exit'}])
-    monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+    monkeypatch.setattr('main_object.prompt', lambda _: next(prompts))
 
     inputs = iter([defaultUser, defaultPassword, testName[0], testName[1]])
     monkeypatch.setattr('builtins.input', lambda _: next(inputs))
@@ -399,7 +400,7 @@ def test_searchJob(monkeypatch, capsys):
   jobClear()
 
   prompts = iter([{0: 'For Existing Users'}, {0: 'Job search/internship'}, {0: 'Search for a Job'}, {0: 'Back to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
-  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+  monkeypatch.setattr('main_object.prompt', lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword])
   monkeypatch.setattr('builtins.input', lambda _: next(inputs))
@@ -414,7 +415,7 @@ def test_postJob(monkeypatch, capsys):
   jobClear()
 
   prompts = iter([{0: 'For Existing Users'}, {0: 'Job search/internship'}, {0: 'Post a Job'}, {0: 'Back to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
-  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+  monkeypatch.setattr('main_object.prompt', lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword, defaultTitle, defaultDescription, defaultEmployer, defaultLocation, defaultSalary])
   monkeypatch.setattr('builtins.input', lambda _: next(inputs))
@@ -438,7 +439,7 @@ def test_postJobExceedsLimit(monkeypatch, capsys):
     file.write(jobs)
 
   prompts = iter([{0: 'For Existing Users'}, {0: 'Job search/internship'}, {0: 'Post a Job'}, {0: 'Back to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
-  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+  monkeypatch.setattr('main_object.prompt', lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword])
   monkeypatch.setattr('builtins.input', lambda _: next(inputs))
@@ -457,7 +458,7 @@ def test_searchSkill(monkeypatch, capsys):
   for skill in skills:
 
     prompts = iter([{0: 'For Existing Users'}, {0: 'Learn a new skill'}, {0: skill}, {0: 'Back to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
-    monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+    monkeypatch.setattr('main_object.prompt', lambda _: next(prompts))
 
     inputs = iter([defaultUser, defaultPassword])
     monkeypatch.setattr('builtins.input', lambda _: next(inputs))
@@ -489,7 +490,7 @@ def test_usefulLinksSignIn(monkeypatch, capsys):
   for testUsernamePassword in testUsernamesPasswords:
 
     prompts = iter([{0: 'Useful Links'}, {0: 'General'}, {0: 'Sign Up'}, {0: 'For Existing User'}, {0: 'Log out'}, {0: 'Back to General'}, {0: 'Back to Useful Links'}, {0: 'Back to Main Menu'}, {0: 'Exit'}])
-    monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+    monkeypatch.setattr('main_object.prompt', lambda _: next(prompts))
 
     inputs = iter([testUsernamePassword[0], testUsernamePassword[1]])
     monkeypatch.setattr('builtins.input', lambda _: next(inputs))
@@ -513,7 +514,7 @@ def test_usefulLinksSignUp(monkeypatch, capsys):
   for testUsernamePassword in testUsernamesPasswords:
 
     prompts = iter([{0: 'Useful Links'}, {0: 'General'}, {0: 'Sign Up'}, {0: 'To Create an Account'}, {0: 'Log out'}, {0: 'Back to General'}, {0: 'Back to Useful Links'}, {0: 'Back to Main Menu'}, {0: 'Exit'}])
-    monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+    monkeypatch.setattr('main_object.prompt', lambda _: next(prompts))
 
     inputs = iter([testUsernamePassword[0], testUsernamePassword[1], defaultFirstName, defaultLastName])
     monkeypatch.setattr('builtins.input', lambda _: next(inputs))
@@ -528,7 +529,7 @@ def test_helpCenter(monkeypatch, capsys):
   userClear()
 
   prompts = iter([{0: 'Useful Links'}, {0: 'General'}, {0: 'Help Center'}, {0: 'Back to Useful Links'}, {0: 'Back to Main Menu'}, {0: 'Exit'}])
-  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+  monkeypatch.setattr('main_object.prompt', lambda _: next(prompts))
 
   main()
 
@@ -539,7 +540,7 @@ def test_about(monkeypatch, capsys):
   userClear()
 
   prompts = iter([{0: 'Useful Links'}, {0: 'General'}, {0: 'About'}, {0: 'Back to Useful Links'}, {0: 'Back to Main Menu'}, {0: 'Exit'}])
-  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+  monkeypatch.setattr('main_object.prompt', lambda _: next(prompts))
 
   main()
 
@@ -549,7 +550,7 @@ def test_press(monkeypatch, capsys):
   userClear()
 
   prompts = iter([{0: 'Useful Links'}, {0: 'General'}, {0: 'Press'}, {0: 'Back to Useful Links'}, {0: 'Back to Main Menu'}, {0: 'Exit'}])
-  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+  monkeypatch.setattr('main_object.prompt', lambda _: next(prompts))
 
   main()
 
@@ -559,7 +560,7 @@ def test_blog(monkeypatch, capsys):
   userClear()
 
   prompts = iter([{0: 'Useful Links'}, {0: 'General'}, {0: 'Blog'}, {0: 'Back to Useful Links'}, {0: 'Back to Main Menu'}, {0: 'Exit'}])
-  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+  monkeypatch.setattr('main_object.prompt', lambda _: next(prompts))
 
   main()
 
@@ -569,7 +570,7 @@ def test_careers(monkeypatch, capsys):
   userClear()
 
   prompts = iter([{0: 'Useful Links'}, {0: 'General'}, {0: 'Careers'}, {0: 'Back to Useful Links'}, {0: 'Back to Main Menu'}, {0: 'Exit'}])
-  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+  monkeypatch.setattr('main_object.prompt', lambda _: next(prompts))
 
   main()
 
@@ -579,7 +580,7 @@ def test_developers(monkeypatch, capsys):
   userClear()
 
   prompts = iter([{0: 'Useful Links'}, {0: 'General'}, {0: 'Developers'}, {0: 'Back to Useful Links'}, {0: 'Back to Main Menu'}, {0: 'Exit'}])
-  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+  monkeypatch.setattr('main_object.prompt', lambda _: next(prompts))
 
   main()
 
@@ -589,7 +590,7 @@ def test_browse(monkeypatch, capsys):
   userClear()
 
   prompts = iter([{0: 'Useful Links'}, {0: 'Browse InCollege'}, {0: 'Back to Main Menu'}, {0: 'Exit'}])
-  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+  monkeypatch.setattr('main_object.prompt', lambda _: next(prompts))
 
   main()
 
@@ -599,7 +600,7 @@ def test_businessSolutions(monkeypatch, capsys):
   userClear()
 
   prompts = iter([{0: 'Useful Links'}, {0: 'Business Solutions'}, {0: 'Back to Main Menu'}, {0: 'Exit'}])
-  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+  monkeypatch.setattr('main_object.prompt', lambda _: next(prompts))
 
   main()
 
@@ -609,7 +610,7 @@ def test_directories(monkeypatch, capsys):
   userClear()
 
   prompts = iter([{0: 'Useful Links'}, {0: 'Directories'}, {0: 'Back to Main Menu'}, {0: 'Exit'}])
-  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+  monkeypatch.setattr('main_object.prompt', lambda _: next(prompts))
 
   main()
 
@@ -624,7 +625,7 @@ def test_copyrightNotice(monkeypatch, capsys):
   userClear()
 
   prompts = iter([{0: 'InCollege Important Links'}, {0: 'A Copyright Notice'}, {0: 'Back to Main Menu'}, {0: 'Exit'}])
-  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+  monkeypatch.setattr('main_object.prompt', lambda _: next(prompts))
 
   main()
 
@@ -634,7 +635,7 @@ def test_aboutImportant(monkeypatch, capsys):
   userClear()
 
   prompts = iter([{0: 'InCollege Important Links'}, {0: 'About'}, {0: 'Back to Main Menu'}, {0: 'Exit'}])
-  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+  monkeypatch.setattr('main_object.prompt', lambda _: next(prompts))
 
   main()
 
@@ -644,7 +645,7 @@ def test_accessibility(monkeypatch, capsys):
   userClear()
 
   prompts = iter([{0: 'InCollege Important Links'}, {0: 'Accessibility'}, {0: 'Back to Main Menu'}, {0: 'Exit'}])
-  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+  monkeypatch.setattr('main_object.prompt', lambda _: next(prompts))
 
   main()
 
@@ -654,7 +655,7 @@ def test_userAgreement(monkeypatch, capsys):
   userClear()
 
   prompts = iter([{0: 'InCollege Important Links'}, {0: 'User Agreement'}, {0: 'Back to Main Menu'}, {0: 'Exit'}])
-  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+  monkeypatch.setattr('main_object.prompt', lambda _: next(prompts))
 
   main()
 
@@ -679,7 +680,7 @@ def test_privacyPolicy(monkeypatch, capsys):
   for testUsernamePassword in testUsernamesPasswords:
 
     prompts = iter([{0: 'For Existing Users'}, {0: 'InCollege Important Links'}, {0: 'Privacy Policy'}, {0: 'Back to Important Links'}, {0: 'Back to Main Menu'},{0: 'Log out'}, {0: 'Exit'}])
-    monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+    monkeypatch.setattr('main_object.prompt', lambda _: next(prompts))
 
     inputs = iter([testUsernamePassword[0], testUsernamePassword[1]])
     monkeypatch.setattr('builtins.input', lambda _: next(inputs))
@@ -691,7 +692,7 @@ def test_cookiePolicy(monkeypatch, capsys):
   userClear()
 
   prompts = iter([{0: 'InCollege Important Links'}, {0: 'Cookie Policy'}, {0: 'Back to Main Menu'}, {0: 'Exit'}])
-  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+  monkeypatch.setattr('main_object.prompt', lambda _: next(prompts))
 
   main()
 
@@ -701,7 +702,7 @@ def test_copyrightPolicy(monkeypatch, capsys):
   userClear()
 
   prompts = iter([{0: 'InCollege Important Links'}, {0: 'Copyright Policy'}, {0: 'Back to Main Menu'}, {0: 'Exit'}])
-  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+  monkeypatch.setattr('main_object.prompt', lambda _: next(prompts))
 
   main()
 
@@ -711,7 +712,7 @@ def test_brandPolicy(monkeypatch, capsys):
   userClear()
 
   prompts = iter([{0: 'InCollege Important Links'}, {0: 'Brand Policy'}, {0: 'Back to Main Menu'}, {0: 'Exit'}])
-  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+  monkeypatch.setattr('main_object.prompt', lambda _: next(prompts))
 
   main()
 
@@ -721,7 +722,7 @@ def test_guestControlEmail(monkeypatch, capsys):
   startTest()
 
   prompts = iter([{0: 'For Existing Users'}, {0: 'InCollege Important Links'}, {0: 'Guest Controls'}, {0: 'Email'}, {0: 'Back to Important Links'}, {0: 'Back to Main Menu'}, {0: 'Log out'}, {0: 'Exit'}])
-  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+  monkeypatch.setattr('main_object.prompt', lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword, 'no'])
   monkeypatch.setattr('builtins.input', lambda _: next(inputs))
@@ -735,7 +736,7 @@ def test_guestControlSMS(monkeypatch, capsys):
   startTest()
 
   prompts = iter([{0: 'For Existing Users'}, {0: 'InCollege Important Links'}, {0: 'Guest Controls'}, {0: 'SMS'}, {0: 'Back to Important Links'}, {0: 'Back to Main Menu'}, {0: 'Log out'}, {0: 'Exit'}])
-  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+  monkeypatch.setattr('main_object.prompt', lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword, 'no'])
   monkeypatch.setattr('builtins.input', lambda _: next(inputs))
@@ -749,7 +750,7 @@ def test_guestControlAds(monkeypatch, capsys):
   startTest()
 
   prompts = iter([{0: 'For Existing Users'}, {0: 'InCollege Important Links'}, {0: 'Guest Controls'}, {0: 'Advertising'}, {0: 'Back to Important Links'}, {0: 'Back to Main Menu'}, {0: 'Log out'}, {0: 'Exit'}])
-  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+  monkeypatch.setattr('main_object.prompt', lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword, 'no'])
   monkeypatch.setattr('builtins.input', lambda _: next(inputs))
@@ -763,7 +764,7 @@ def test_language(monkeypatch, capsys):
   startTest()
 
   prompts = iter([{0: 'For Existing Users'}, {0: 'InCollege Important Links'}, {0: 'Languages'}, {0: 'Spanish'}, {0: 'Back to Important Links'}, {0: 'Back to Main Menu'}, {0: 'Log out'}, {0: 'Exit'}])
-  monkeypatch.setattr('main.prompt', lambda _: next(prompts))
+  monkeypatch.setattr('main_object.prompt', lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword])
   monkeypatch.setattr('builtins.input', lambda _: next(inputs))
