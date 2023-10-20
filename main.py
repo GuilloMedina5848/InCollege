@@ -1,6 +1,5 @@
-import re
+import re, helper, psycopg
 from InquirerPy import prompt
-import psycopg
 from psycopg.rows import dict_row
 
 # Connect to your PostgreSQL server
@@ -9,48 +8,6 @@ DATABASE_USER_ = "postgres"
 DATABASE_PASSWORD_ = "postgres"
 DATABASE_HOST_ = "localhost" 
 DATABASE_PORT_ = "5432"  # default PostgreSQL port
-
-# If the database doesn't exist, create it
-# Should put this function in a module and import it here/to the test
-
-def createDatabase():
-    with psycopg.connect(user=DATABASE_USER_, password=DATABASE_PASSWORD_) as connection:
-       connection._set_autocommit(True)
-       with connection.cursor() as cursor:
-          cursor.execute(f"""CREATE DATABASE {DATABASE_NAME_};""")
-    with psycopg.connect(dbname=DATABASE_NAME_, user=DATABASE_USER_, password=DATABASE_PASSWORD_, host=DATABASE_HOST_, port=DATABASE_PORT_) as connection:
-        with connection.cursor() as cursor:
-          cursor.execute("""CREATE TABLE users (
-                              user_id VARCHAR(255) PRIMARY KEY,
-                              password TEXT NOT NULL,
-                              first_name VARCHAR(255) NOT NULL,
-                              last_name VARCHAR(255) NOT NULL,
-                              has_email BOOLEAN DEFAULT TRUE,
-                              has_sms BOOLEAN DEFAULT TRUE,
-                              has_ad BOOLEAN DEFAULT TRUE,
-                              language VARCHAR(255) DEFAULT 'English',
-                              university VARCHAR(255),
-                              major VARCHAR(255)
-                          );
-
-                          CREATE TABLE jobs (
-                              job_id SERIAL PRIMARY KEY,
-                              user_id VARCHAR(255) REFERENCES users(user_id),
-                              title VARCHAR(255) NOT NULL,
-                              description TEXT,
-                              employer VARCHAR(255) NOT NULL,
-                              location VARCHAR(255) NOT NULL,
-                              salary DECIMAL,
-                              first_name VARCHAR(255),
-                              last_name VARCHAR(255)
-                          );
-
-                          CREATE TABLE friendships (
-                              friendship_id SERIAL PRIMARY KEY,
-                              student1_id VARCHAR(255) REFERENCES users(user_id),
-                              student2_id VARCHAR(255) REFERENCES users(user_id),
-                              status TEXT CHECK (status IN ('pending', 'confirmed'))
-                          );""")
 
 class InCollegeServer():
     DATABASE_NAME = ""
@@ -61,16 +18,15 @@ class InCollegeServer():
 
     loggedIn = False
     userID = ""
-    firstName = ""
-    lastName = ""
+    first_name = ""
+    last_name = ""
 
-    Email = True
-    SMS = True
-    Ads = True
-    Language = "English"
+    has_email = True
+    has_sms = True
+    has_ad = True
+    language = "English"
 
     maxJobs = 5
-
     maxUsers = 10
 
     def validUser(self, UserID, password):
@@ -104,16 +60,6 @@ class InCollegeServer():
             return False
         return True
 
-    # def addToFile(self, username, password, first, last, Email, SMS, Ads, Language):
-    #     with open(self.usersFilename, "a") as file:
-    #         file.write(f"{self.userCount + 1},{username},{password},{first},{last},{Email},{SMS},{Ads},{Language}\n")
-    #     file.close()
-
-    # def addToJobFile(self, title, description, employer, location, salary):
-    #     with open(self.jobsFilename, "a") as file:
-    #         file.write(f"{self.firstName},{self.lastName},{title},{description},{employer},{location},{salary}\n")
-    #     file.close()
-
     def addJob(self):
         """
         Allows a logged-in user to post a job.
@@ -142,7 +88,7 @@ class InCollegeServer():
             except ValueError:
                 print("\nPlease enter a valid number for salary.\n")
 
-        # jobsList.append((self.firstName, self.lastName, title, description, employer, location, salary))
+        # jobsList.append((self.first_name, self.last_name, title, description, employer, location, salary))
         # saveJobs(jobsList)
 
         # Connect to the database
@@ -153,7 +99,7 @@ class InCollegeServer():
                 INSERT INTO jobs (title, description, employer, location, salary, user_id, first_name, last_name)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
                 """
-                cursor.execute(insert_query, (title, description, employer, location, salary, self.userID, self.firstName, self.lastName))
+                cursor.execute(insert_query, (title, description, employer, location, salary, self.userID, self.first_name, self.last_name))
 
         print("\nJob posted successfully!")
 
@@ -174,12 +120,12 @@ class InCollegeServer():
             # Check if the user exists in the database
             if user:
                 self.userID = user['user_id']
-                self.firstName = user['first_name']
-                self.lastName = user['last_name']
-                self.Email = user['has_email']
-                self.SMS = user['has_sms']
-                self.Ads = user['has_ad']
-                self.Language = user['language']
+                self.first_name = user['first_name']
+                self.last_name = user['last_name']
+                self.has_email = user['has_email']
+                self.has_sms = user['has_sms']
+                self.has_ad = user['has_ad']
+                self.language = user['language']
                 self.loggedIn = True
 
                 print(f"\nWelcome, {existingUserID}. You have successfully logged in.")
@@ -237,10 +183,10 @@ class InCollegeServer():
                         self.first = first
                         self.last = last
                         self.loggedIn = True
-                        self.Email = True
-                        self.SMS = True
-                        self.Ads = True
-                        self.Language = "English"
+                        self.has_email = True
+                        self.has_sms = True
+                        self.has_ad = True
+                        self.language = "English"
                         
                         print(f"\nWelcome, {self.userID}. You have successfully logged in.\n")
                         break
@@ -380,36 +326,23 @@ class InCollegeServer():
             except ValueError:
                 print("Invalid choice, please try again.\n")
 
-    # Fixed
-    def changePreference(self, preference, setting):
-        # Define a mapping of preference names to database column names
-        column_map = {
-            "Email": "has_email",
-            "SMS": "has_sms",
-            "Ads": "has_ad",
-            "Language": "language"
-        }
-
-        # Use the mapped column name
-        column_name = column_map.get(preference)
+    def changeEntry(self, table, column, entry):
 
         # Update class attributes
-        if preference in ["Email", "SMS", "Ads"]:
-            setattr(self, preference, setting)
-        elif preference == "Language":
-            self.Language = setting
+        if column in ["has_email", "has_sms", "has_ad", "language"]:
+            setattr(self, column, entry)
 
         # Connect to the database and execute the UPDATE statement
         with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
             with connection.cursor() as cursor:
                 # Update the user's preference in the database
                 update_query = f"""
-                UPDATE users SET {column_name} = %s WHERE user_id = %s;
+                UPDATE {table} SET {column} = %s WHERE user_id = %s;
                 """
-                cursor.execute(update_query, (setting, self.userID))
+                cursor.execute(update_query, (entry, self.userID))
 
     def changeLanguage(self):
-        print("\nCurrent Language: " + self.Language + "\n")
+        print("\nCurrent Language: " + self.language + "\n")
 
         while True:
             try:
@@ -424,17 +357,17 @@ class InCollegeServer():
 
                 match choice[0]:
                     case "English":
-                        if self.Language == "English":
+                        if self.language == "English":
                             print("\nCurrent Language is already in English\n")
                         else:
-                            self.changePreference("Language", "English")
+                            self.changeEntry("users", "language", "English")
                             print("\nLanguage changed to English\n")
                         
                     case "Spanish":
-                        if self.Language == "Spanish":
+                        if self.language == "Spanish":
                             print("\nCurrent Language is already in Spanish\n")
                         else:
-                            self.changePreference("Language", "Spanish")
+                            self.changeEntry("users", "language", "Spanish")
                             print("\nLanguage changed to Spanish\n")
 
                     case "Back to Important Links":
@@ -448,19 +381,19 @@ class InCollegeServer():
 
     def guestControls(self):
         while True:
-            if self.Email == True:
+            if self.has_email == True:
                 emailPreference = "ON"
-            elif self.Email == False:
+            elif self.has_email == False:
                 emailPreference = "OFF"
 
-            if self.SMS == True:
+            if self.has_sms == True:
                 smsPreference = "ON"
-            elif self.SMS == False:
+            elif self.has_sms == False:
                 smsPreference = "OFF"
             
-            if self.Ads == True:
+            if self.has_ad == True:
                 adsPreference = "ON"
-            elif self.Ads == False:
+            elif self.has_ad == False:
                 adsPreference = "OFF"
             
             print("\nCurrent preferences (Emails: " + emailPreference + ", SMS: " + smsPreference + ", Advertising: " + adsPreference + ")\n")
@@ -480,10 +413,10 @@ class InCollegeServer():
                         emailChoice = input("\nDo you want to receive InCollege emails? Type yes or no.\n").lower()
 
                         if emailChoice == "yes":
-                            self.changePreference("Email", True)
+                            self.changeEntry("users", "has_email", True)
                             print("\nYou will keep receiving InCollege emails\n")
                         elif emailChoice == "no":
-                            self.changePreference("Email", False)
+                            self.changeEntry("users", "has_email", False)
                             print("\nYou will stop receiving InCollege emails\n")
                         else: 
                             print("\nPlease type yes or no\n")
@@ -492,10 +425,10 @@ class InCollegeServer():
                         SMSChoice = input("\nDo you want to receive InCollege SMS's? Type yes or no.\n").lower()
 
                         if SMSChoice == "yes":
-                            self.changePreference("SMS", True)
+                            self.changeEntry("users", "has_sms", True)
                             print("\nYou will keep receiving InCollege SMS's\n")
                         elif SMSChoice == "no":
-                            self.changePreference("SMS", False)
+                            self.changeEntry("users", "has_sms", False)
                             print("\nYou will stop receiving InCollege SMS's\n")
                         else: 
                             print("\nPlease type yes or no\n")
@@ -504,10 +437,10 @@ class InCollegeServer():
                         adsChoice = input("\nDo you want to receive InCollege advertising? Type yes or no.\n").lower()
 
                         if adsChoice == "yes":
-                            self.changePreference("Ads", True)
+                            self.changeEntry("users", "has_ad", True)
                             print("\nYou will keep receiving InCollege advertising\n")    
                         elif adsChoice == "no":
-                            self.changePreference("Ads", False)
+                            self.changeEntry("users", "has_ad", False)
                             print("\nYou will stop receiving InCollege advertising\n")
                         else: 
                             print("\nPlease type yes or no\n")
@@ -676,6 +609,88 @@ class InCollegeServer():
             except ValueError:
                     print("Choice not found, please try again.\n")
 
+    def editProfile(self):
+        while True:
+            choice = prompt({
+                    "type": "list",
+                    "message": "Edit Profile",
+                    "choices": ["First Name", "Last Name", "Title", "Major", "University", "Information", "About", "Finish"]
+                })
+            
+            if choice[0] == "Finish":
+                break
+
+            entry = input(f"Change {choice[0]} to what? ")
+            # add logic to verify/change input based on selection
+            column = choice[0].lower().replace(' ', '_')
+            table_map = {
+                "first_name": "users",
+                "last_name": "users",
+                "title": "profiles",
+                "major": "users",
+                "university": "users",
+                "about" : "profiles"
+            }
+            self.changeEntry(table_map.get(column), column, entry)
+
+    def profile(self):
+        options = []
+        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+            with connection.cursor() as cursor:
+                flag = 0
+                try:
+                    cursor.execute(f"""SELECT *
+                                    FROM profiles
+                                    WHERE user_id = '{self.userID}'""")
+                    vals = cursor.fetchall()
+                    if not vals:
+                        raise Exception
+                except:
+                    options.append("Create Profile")
+                    flag = 1
+                if not flag:
+                    vals = list(vals[0])
+                    print(vals)
+                    i = 0
+                    for val in vals:
+                        if val == None:
+                            vals[i] = ""
+                        i += 1
+                    print(vals)
+                    title, about = vals[2], vals[3]
+                    options.append("Edit Profile")
+                    print(f"""
+                            {self.first_name} {self.last_name}\n
+                            {title}\n
+                            {about}
+                            """)
+
+        options.append("Go Back")
+        
+        try: 
+            choice = prompt({
+                "type": "list",
+                "message" : "Profile:",
+                "choices": options
+            })
+
+            match choice[0]:
+                
+                case "Edit Profile":
+                    self.editProfile()
+                case "Create Profile":
+                    with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+                        with connection.cursor() as cursor:
+                            cursor.execute(f"""
+                                        INSERT INTO profiles (user_id)
+                                        VALUES ('{self.userID}');
+                                        """)
+                    self.editProfile()
+
+
+        except ValueError:              
+            print("Invalid choice. Please enter a valid option.")
+
     def mainMenu(self):
         """
         Displays the main menu to the user after they log in.
@@ -683,21 +698,21 @@ class InCollegeServer():
         # loggedIn = True
         while True:
             #Display current language
-            print("\nCurrent Language: " + self.Language)
+            print("\nCurrent Language: " + self.language)
             #Display preferences
-            if self.Email == True:
+            if self.has_email == True:
                 emailPreference = "ON"
-            elif self.Email == False:
+            elif self.has_email == False:
                 emailPreference = "OFF"
             
-            if self.SMS == True:
+            if self.has_sms == True:
                 smsPreference = "ON"
-            elif self.SMS == False:
+            elif self.has_sms == False:
                 smsPreference = "OFF"
             
-            if self.Ads == True:
+            if self.has_ad == True:
                 adsPreference = "ON"
-            elif self.Ads == False:
+            elif self.has_ad == False:
                 adsPreference = "OFF"
             
             print("Current preferences (Emails: " + emailPreference + ", SMS: " + smsPreference + ", Advertising: " + adsPreference + ")")
@@ -712,6 +727,7 @@ class InCollegeServer():
                                             "Learn a new skill",
                                             "Useful Links", 
                                             "InCollege Important Links",
+                                            "Profile",
                                             "View Pending Connection Requests",
                                             "Show my Network",
                                             "Disconnect from a Connection",
@@ -778,6 +794,8 @@ class InCollegeServer():
                         self.usefulLinks()
                     case "InCollege Important Links":
                         self.importantLinks() 
+                    case "Profile":
+                        self.profile()
                     case "View Pending Connection Requests":
                         self.viewPendingRequests()
                     case "Show my Network":
@@ -788,12 +806,12 @@ class InCollegeServer():
                         # Restore the variables
                         self.userID = ""
                         self.loggedIn = False
-                        self.firstName = ""
-                        self.lastName = ""
-                        self.Email = True
-                        self.SMS = True
-                        self.Ads = True
-                        self.Language = "English"
+                        self.first_name = ""
+                        self.last_name = ""
+                        self.has_email = True
+                        self.has_sms = True
+                        self.has_ad = True
+                        self.language = "English"
 
                         print("\nLogging out.\n")
                         break
@@ -895,8 +913,7 @@ class InCollegeServer():
             print(f"\nYou have {len(requests)} pending friend requests!")
             for request in requests:
                 self.handleFriendRequest(request[0])  # request[0] is student1_id, who sent the request
-        
-        
+               
     def handleFriendRequest(self, from_user_id):
         # Fetch the name of the person who sent the request for better UI
         with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
@@ -932,7 +949,6 @@ class InCollegeServer():
                     """
                     cursor.execute(delete_query, (from_user_id, self.userID))
                     print("Friend request rejected!")
-
 
     def viewPendingRequests(self):
         with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
@@ -1004,9 +1020,6 @@ class InCollegeServer():
                 else:
                     print("The given user is not in your connection list.")
 
-
-
-
     def __init__(self, databaseName = DATABASE_NAME_, databaseUser = DATABASE_USER_, databasePassword = DATABASE_PASSWORD_, databaseHost = DATABASE_HOST_, databasePort = DATABASE_PORT_):
         self.DATABASE_NAME = databaseName
         self.DATABASE_USER = databaseUser
@@ -1020,7 +1033,7 @@ def main():
         psycopg.connect(dbname=DATABASE_NAME_, user=DATABASE_USER_, password=DATABASE_PASSWORD_, host=DATABASE_HOST_, port=DATABASE_PORT_)
     except:
         print(f"Could not connect to database {DATABASE_NAME_}. Creating it locally...")
-        createDatabase()
+        helper.createDatabase(DATABASE_USER_, DATABASE_PASSWORD_, DATABASE_NAME_, DATABASE_HOST_, DATABASE_PORT_)
     
     InCollegeServer()
 

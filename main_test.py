@@ -1,6 +1,5 @@
-import main
+import main, pytest, psycopg, helper
 from main import DATABASE_NAME_, InCollegeServer
-import pytest, psycopg
 
 # TODO: update comments to reflect change from .txt file to database
 
@@ -46,45 +45,6 @@ DATABASE_USER = "postgres"
 DATABASE_PASSWORD = "postgres"
 DATABASE_HOST = "localhost" 
 DATABASE_PORT = "5432"
-
-def createTestDatabase():
-    with psycopg.connect(user=DATABASE_USER, password=DATABASE_PASSWORD) as connection:
-       connection._set_autocommit(True)
-       with connection.cursor() as cursor:
-          cursor.execute(f"""CREATE DATABASE {DATABASE_TEST_NAME};""")
-    with psycopg.connect(dbname=DATABASE_TEST_NAME, user=DATABASE_USER, password=DATABASE_PASSWORD, host=DATABASE_HOST, port=DATABASE_PORT) as connection:
-        with connection.cursor() as cursor:
-          cursor.execute("""CREATE TABLE users (
-                              user_id VARCHAR(255) PRIMARY KEY,
-                              password TEXT NOT NULL,
-                              first_name VARCHAR(255) NOT NULL,
-                              last_name VARCHAR(255) NOT NULL,
-                              has_email BOOLEAN DEFAULT TRUE,
-                              has_sms BOOLEAN DEFAULT TRUE,
-                              has_ad BOOLEAN DEFAULT TRUE,
-                              language VARCHAR(255) DEFAULT 'English',
-                              university VARCHAR(255),
-                              major VARCHAR(255)
-                          );
-
-                          CREATE TABLE jobs (
-                              job_id SERIAL PRIMARY KEY,
-                              user_id VARCHAR(255) REFERENCES users(user_id),
-                              title VARCHAR(255) NOT NULL,
-                              description TEXT,
-                              employer VARCHAR(255) NOT NULL,
-                              location VARCHAR(255) NOT NULL,
-                              salary DECIMAL,
-                              first_name VARCHAR(255),
-                              last_name VARCHAR(255)
-                          );
-
-                          CREATE TABLE friendships (
-                              friendship_id SERIAL PRIMARY KEY,
-                              student1_id VARCHAR(255) REFERENCES users(user_id),
-                              student2_id VARCHAR(255) REFERENCES users(user_id),
-                              status TEXT CHECK (status IN ('pending', 'confirmed'))
-                          );""")
 
 def dropTestDatabase():
     with psycopg.connect(dbname=DATABASE_ORIGINAL, user=DATABASE_USER, password=DATABASE_PASSWORD, host=DATABASE_HOST, port=DATABASE_PORT) as connection:
@@ -147,7 +107,7 @@ def readDB(select = "all"):
                       print(f"Error executing query: {e}")
     return read
 
-createTestDatabase()
+helper.createDatabase(DATABASE_USER, DATABASE_PASSWORD, DATABASE_TEST_NAME, DATABASE_HOST, DATABASE_PORT)
 
 ###########
 ## TESTS ##
