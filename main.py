@@ -724,7 +724,6 @@ class InCollegeServer():
                             "choices": jobs
                         })
                         id = ids[jobs.index(choice[0])]
-                        print(id)
                     self.editJobExperience(id)
                 case "Add Job Experience":
                     with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
