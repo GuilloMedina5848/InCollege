@@ -832,6 +832,9 @@ class InCollegeServer():
                 self.jobExperience()
             else:
                 entry = input(f"Change {choice[0]} to what? ")
+                
+                if choice[0] == "Major" or choice[0] == "University":
+                    entry = entry.title()
                 # add logic to verify/change input based on selection
                 column = choice[0].lower().replace(' ', '_')
                 table_map = {
