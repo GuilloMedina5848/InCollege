@@ -326,7 +326,44 @@ class InCollegeServer():
             except ValueError:
                 print("Invalid choice, please try again.\n")
 
-    def changeEntry(self, table, column, entry):
+    def getDate(self):
+        while True:
+            year = input('Enter year: ')
+            if year.isnumeric():
+                year = int(year)
+                if year <= 9999 and year >= 1:
+                    break
+            print('Invalid input. Please input a valid year.')
+
+        while True:
+            month = input('Enter month: ')
+            if month.isnumeric():
+                month = int(month)
+                if month <= 12 and month >= 1:
+                    break
+            print('Invalid input. Please input a valid month.')
+        
+        if month == 2:
+            if year % 4 == 0 and (year % 100 != 0 or year % 400 == 0):
+                max = 29
+            else:
+                max = 28
+        elif month in (1, 3, 5, 7, 8, 10, 12):
+            max = 31
+        else: max = 30
+
+        while True:
+            day = input('Enter day: ')
+            if day.isnumeric():
+                day = int(day)
+                if day <= max and day >= 1:
+                    break
+            print('Invalid input. Please input a valid day.')
+        
+        return f"{year}-{month}-{day}"
+
+    # change crit/crit2 method to accept a list of lists with critical rows and critical entries?
+    def changeEntry(self, table, column, entry, crit = "", crit2 = ""):
 
         # Update class attributes
         if column in ["has_email", "has_sms", "has_ad", "language"]:
@@ -337,8 +374,11 @@ class InCollegeServer():
             with connection.cursor() as cursor:
                 # Update the user's preference in the database
                 update_query = f"""
-                UPDATE {table} SET {column} = %s WHERE user_id = %s;
+                UPDATE {table} SET {column} = %s WHERE user_id = %s
                 """
+                if crit and crit2:
+                    update_query = update_query + f""" AND {crit} = {str(crit2)}"""
+                update_query = update_query + ';'
                 cursor.execute(update_query, (entry, self.userID))
 
     def changeLanguage(self):
@@ -609,29 +649,200 @@ class InCollegeServer():
             except ValueError:
                     print("Choice not found, please try again.\n")
 
-    def editProfile(self):
+    def editJobExperience(self, id):
         while True:
             choice = prompt({
                     "type": "list",
-                    "message": "Edit Profile",
-                    "choices": ["First Name", "Last Name", "Title", "Major", "University", "Information", "About", "Finish"]
+                    "message": "Edit Job Experience",
+                    "choices": ["Title", "Employer", "Date Started", "Date Ended", "Location", "Description", "Finish"]
+                })
+
+            if choice[0] == "Finish":
+                break
+            
+            else:
+                if choice[0] == "Date Started" or choice[0] == "Date Ended":
+                    entry = self.getDate()
+                else:
+                    entry = input(f"Change {choice[0]} to what? ")
+                # add logic to verify/change input based on selection
+                column = choice[0].lower().replace(' ', '_')
+                self.changeEntry("experiences", column, entry, "experience_id", id)
+
+    def jobExperience(self):
+        options = []
+        jobs = []
+        ids = []
+        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+            with connection.cursor() as cursor:
+                flag = 0
+                try:
+                    cursor.execute(f"""SELECT *
+                                    FROM experiences
+                                    WHERE user_id = '{self.userID}'""")
+                    vals = cursor.fetchall()
+                    if not vals:
+                        raise Exception
+                except:
+                    options.append("Add Job Experience")
+                    flag = 1
+                if not flag:
+                    vals = list(vals)
+
+                    print("Current job experience:")
+                    for val in vals:
+                        print(f"""
+                            Worked as a {val[2]} for {val[3]} , from {val[4]} to {val[5]}, at {val[6]}.\n
+                            {val[7]}
+                            """)
+                        jobs.append(f"{val[2]} for {val[3]}")
+                        ids.append(val[0])
+                    options.append("Edit Job Experience")
+                    if len(vals) < 3:
+                        options.append("Add Job Experience")
+
+        options.append("Go Back")
+
+        try: 
+            choice = prompt({
+                "type": "list",
+                "message" : "Job Experience:",
+                "choices": options
+            })
+
+            match choice[0]:
+
+                case "Go Back":
+                    return
+                case "Edit Job Experience":
+                    if len(jobs) == 1:
+                        id = ids[0]
+                    else:
+                        choice = prompt({
+                            "type": "list",
+                            "message" : "Edit Job Experience:",
+                            "choices": jobs
+                        })
+                        id = ids[jobs.index(choice[0])]
+                        print(id)
+                    self.editJobExperience(id)
+                case "Add Job Experience":
+                    with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+                        with connection.cursor() as cursor:
+                            connection._set_autocommit(True)
+                            cursor.execute(f"""
+                                        INSERT INTO experiences (user_id)
+                                        VALUES ('{self.userID}');
+                                        """)
+                            cursor.execute(f"""
+                                           SELECT experience_id
+                                           FROM experiences
+                                           WHERE user_id = '{self.userID}';
+                                           """)
+                            self.editJobExperience(cursor.fetchall()[-1][0])
+                case __:
+                    raise ValueError
+            
+        except ValueError:              
+            print("Invalid choice. Please enter a valid option.")
+
+    def editEducation(self):
+        while True:
+            choice = prompt({
+                    "type": "list",
+                    "message": "Edit Education",
+                    "choices": ["School Name", "Degree", "Year Started", "Year Ended", "Finish"]
                 })
             
             if choice[0] == "Finish":
                 break
 
-            entry = input(f"Change {choice[0]} to what? ")
-            # add logic to verify/change input based on selection
-            column = choice[0].lower().replace(' ', '_')
-            table_map = {
-                "first_name": "users",
-                "last_name": "users",
-                "title": "profiles",
-                "major": "users",
-                "university": "users",
-                "about" : "profiles"
-            }
-            self.changeEntry(table_map.get(column), column, entry)
+            else:
+                entry = input(f"Change {choice[0]} to what? ")
+                # add logic to verify/change input based on selection
+                column = choice[0].lower().replace(' ', '_')
+                self.changeEntry("educations", column, entry)
+
+    def education(self):
+
+        options = []
+        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+            with connection.cursor() as cursor:
+                flag = 0
+                try:
+                    cursor.execute(f"""SELECT *
+                                    FROM educations
+                                    WHERE user_id = '{self.userID}'""")
+                    vals = cursor.fetchall()
+                    if not vals:
+                        raise Exception
+                except:
+                    options.append("Add Education")
+                    flag = 1
+                if not flag:
+                    vals = list(vals[0])
+                    print(f"""
+                          Current education:
+                          Attended {vals[2]} for {vals[5] - vals[4]} years, from {vals[4]} to {vals[5]}, to obtain a {vals[3]}.
+                          """)
+                    options.append("Edit Education")
+
+        options.append("Go Back")
+
+        try: 
+            choice = prompt({
+                "type": "list",
+                "message" : "Education:",
+                "choices": options
+            })
+
+            match choice[0]:
+
+                case "Go Back":
+                    return
+                case "Edit Education":
+                    self.editEducation()
+                case "Add Education":
+                    with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+                        with connection.cursor() as cursor:
+                            cursor.execute(f"""
+                                        INSERT INTO educations (user_id)
+                                        VALUES ('{self.userID}');
+                                        """)
+                    self.editEducation()
+                case __:
+                    raise ValueError
+            
+        except ValueError:              
+            print("Invalid choice. Please enter a valid option.")
+
+    def editProfile(self):
+        while True:
+            choice = prompt({
+                    "type": "list",
+                    "message": "Edit Profile",
+                    "choices": ["First Name", "Last Name", "Title", "Major", "University", "Information", "About", "Education", "Job Experience", "Finish"]
+                })
+            
+            if choice[0] == "Finish":
+                break
+            elif choice[0] == "Education":
+                self.education()
+            elif choice[0] == "Job Experience":
+                self.jobExperience()
+            else:
+                entry = input(f"Change {choice[0]} to what? ")
+                # add logic to verify/change input based on selection
+                column = choice[0].lower().replace(' ', '_')
+                table_map = {
+                    "first_name": "users",
+                    "last_name": "users",
+                    "title": "profiles",
+                    "major": "users",
+                    "university": "users",
+                    "about" : "profiles"
+                }
+                self.changeEntry(table_map.get(column), column, entry)
 
     def profile(self):
         options = []
@@ -650,13 +861,11 @@ class InCollegeServer():
                     flag = 1
                 if not flag:
                     vals = list(vals[0])
-                    print(vals)
                     i = 0
                     for val in vals:
                         if val == None:
                             vals[i] = ""
                         i += 1
-                    print(vals)
                     title, about = vals[2], vals[3]
                     options.append("Edit Profile")
                     print(f"""
@@ -676,6 +885,8 @@ class InCollegeServer():
 
             match choice[0]:
                 
+                case "Go Back":
+                    return
                 case "Edit Profile":
                     self.editProfile()
                 case "Create Profile":
@@ -686,7 +897,8 @@ class InCollegeServer():
                                         VALUES ('{self.userID}');
                                         """)
                     self.editProfile()
-
+                case __:
+                    raise ValueError
 
         except ValueError:              
             print("Invalid choice. Please enter a valid option.")
