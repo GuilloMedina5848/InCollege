@@ -844,13 +844,102 @@ class InCollegeServer():
                 }
                 self.changeEntry(table_map.get(column), column, entry)
 
+    def viewProfile(self, id):
+        
+        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+            with connection.cursor() as cursor:
+                try:
+                    cursor.execute(f"""SELECT (title, about)
+                                    FROM profiles
+                                    WHERE user_id = '{id}'""")
+                    vals = list(cursor.fetchall()[0][0])
+                    if not vals:
+                        raise Exception
+                except:
+                    print("This user has not created a profile.")
+                    return
+                
+                title, about = [vals[i] for i in range(2)]
+
+                cursor.execute(f"""SELECT (first_name, last_name, university, major)
+                                FROM users
+                                WHERE user_id = '{id}'""")
+                
+                vals = list(cursor.fetchall()[0][0])
+                first_name, last_name, university, major = [vals[i] for i in range(4)]
+
+                flag = 0
+                try:
+                    cursor.execute(f"""SELECT (school_name, degree, year_started, year_ended)
+                                    FROM educations
+                                    WHERE user_id = '{id}'""")
+                    vals = list(cursor.fetchall()[0][0])
+                    if not vals:
+                        raise Exception
+                except:
+                    school_name = degree = year_started = year_ended = ""
+                    flag = 1
+                    has_education = 0
+                if not flag:
+                    has_education = 1
+                    school_name, degree, year_started, year_ended = [vals[i] for i in range(4)]
+
+                flag = 0
+                try:
+                    cursor.execute(f"""SELECT (title, employer, date_started, date_ended, location, description)
+                                    FROM experiences
+                                    WHERE user_id = '{id}'""")
+                    vals = list(cursor.fetchall())
+                    if not vals:
+                        raise Exception
+                except:
+                    has_experience = 0
+                    flag = 1
+
+                if not flag:
+                    has_experience = 1
+
+                    jobTitles = [None for i in range(len(vals))]
+                    employers = [None for i in range(len(vals))]
+                    dates_started = [None for i in range(len(vals))]
+                    dates_ended = [None for i in range(len(vals))]
+                    locations = [None for i in range(len(vals))]
+                    descriptions = [None for i in range(len(vals))]
+
+                    i = 0 
+                    for val in vals:
+                        jobTitles[i], employers[i], dates_started[i], dates_ended[i], locations[i], descriptions[i] = [val[0][j] for j in range(6)]
+                        i += 1
+
+        profile = f"""
+                    {first_name} {last_name}\n\n
+                    {title}\n\n
+                    {about}\n\n
+                    University: {university}\n
+                    Major: {major}
+                    """
+        
+        if has_education:
+            profile = profile + f"""
+                    Attended {school_name} from {year_started} to {year_ended} to obtain a {degree}.
+                    """
+
+        if has_experience:
+            for i in range(len(jobTitles)):
+                profile = profile + f"""
+                    Worked as a {jobTitles[i]} for {employers[i]}, from {dates_started[i]} to {dates_ended[i]}, at {locations[i]}:
+                    {descriptions[i]}
+                    """
+
+        print(profile)
+
     def profile(self):
         options = []
         with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
             with connection.cursor() as cursor:
                 flag = 0
                 try:
-                    cursor.execute(f"""SELECT *
+                    cursor.execute(f"""SELECT (title, about)
                                     FROM profiles
                                     WHERE user_id = '{self.userID}'""")
                     vals = cursor.fetchall()
@@ -860,19 +949,8 @@ class InCollegeServer():
                     options.append("Create Profile")
                     flag = 1
                 if not flag:
-                    vals = list(vals[0])
-                    i = 0
-                    for val in vals:
-                        if val == None:
-                            vals[i] = ""
-                        i += 1
-                    title, about = vals[2], vals[3]
                     options.append("Edit Profile")
-                    print(f"""
-                            {self.first_name} {self.last_name}\n
-                            {title}\n
-                            {about}
-                            """)
+                    self.viewProfile(self.userID)
 
         options.append("Go Back")
         
@@ -1202,12 +1280,28 @@ class InCollegeServer():
                 friends_2 = cursor.fetchall()
 
         friends = friends_1 + friends_2
+        options = []
+        ids = []
         if friends:
             print("\nList of Friends:")
             for friend in friends:
-                print(f"User ID: {friend[0]}, Name: {friend[1]} {friend[2]}")
+                options.append(f"User ID: {friend[0]}, Name: {friend[1]} {friend[2]} (View Profile)")
+                ids.append(friend[0])
+            options.append("Go Back")
         else:
             print("\nYou have no connections in the system.")
+
+
+        choice = prompt({
+                        "type": "list",
+                        "message" : "Main Menu:",
+                        "choices": options
+                    })
+        
+        if choice[0] == "Go Back":
+            return
+        
+        self.viewProfile(ids[options.index(choice[0])])
 
     def disconnectFriend(self):
         friend_id = input("Enter the User ID of the connection you want to disconnect from: ")
