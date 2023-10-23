@@ -953,7 +953,31 @@ def test_showMyNetwork(monkeypatch, capsys):
   assert f"List of Friends:\nUser ID: {defaultUser+'1'}, Name: {defaultFirstName} {defaultLastName}"\
        in capsys.readouterr().out
 
-# workaround for pytest terminating after the last test function; userPaste needs to be called to recover the original data in Users.txt
+############################################ Sprint 5 Tests ###################################################
+
+def test_editJobExperience(monkeypatch):
+  pass
+  
+
+def test_jobExperience():
+  # Test how the job experience is displayed
+  pass
+
+def test_editEducation():
+  pass
+
+def test_education():
+  pass
+
+def test_editProfile():
+  pass
+
+def test_viewProfile():
+  pass
+
+def test_profile():
+  pass
+
 
 def test_dummy():
   dropTestDatabase()
