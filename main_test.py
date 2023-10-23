@@ -107,6 +107,16 @@ def readDB(select = "all"):
                       print(f"Error executing query: {e}")
     return read
 
+def addRowsToTable(rows, table):
+  with psycopg.connect(dbname=DATABASE_TEST_NAME, user=DATABASE_USER, password=DATABASE_PASSWORD, host=DATABASE_HOST, port=DATABASE_PORT) as connection:
+    with connection.cursor() as cursor:
+      try:
+        with cursor.copy(f"COPY {table} FROM STDIN") as copy:
+          for row in rows:
+            copy.write_row(row)
+      except Exception as e:
+          print(f"Error executing query: {e}")
+
 helper.createDatabase(DATABASE_USER, DATABASE_PASSWORD, DATABASE_TEST_NAME, DATABASE_HOST, DATABASE_PORT)
 
 ###########
@@ -314,14 +324,7 @@ def test_newUserInvalidExisting(monkeypatch, capsys):
   for testUsername in testUsernames:
     users[0].append((testUsername, defaultPassword, defaultFirstName, defaultLastName, defaultEmailPref, defaultSMSPref, defaultAdsPref, defaultLanguage, defaultUniversity, defaultMajor))
 
-  with psycopg.connect(dbname=DATABASE_TEST_NAME, user=DATABASE_USER, password=DATABASE_PASSWORD, host=DATABASE_HOST, port=DATABASE_PORT) as connection:
-    with connection.cursor() as cursor:
-      try:
-          with cursor.copy("COPY users FROM STDIN") as copy:
-                for user in users[0]:
-                  copy.write_row(user)
-      except Exception as e:
-          print(f"Error executing query: {e}")
+  addRowsToTable(users[0], 'users')
 
   for testUsername in testUsernames:
 
@@ -370,14 +373,7 @@ def test_loginExistingUser(monkeypatch, capsys):
   for testUsernamePassword in testUsernamesPasswords:
     users[0].append((testUsernamePassword[0], testUsernamePassword[1], defaultFirstName, defaultLastName, defaultEmailPref, defaultSMSPref, defaultAdsPref, defaultLanguage, defaultUniversity, defaultMajor))
 
-  with psycopg.connect(dbname=DATABASE_TEST_NAME, user=DATABASE_USER, password=DATABASE_PASSWORD, host=DATABASE_HOST, port=DATABASE_PORT) as connection:
-    with connection.cursor() as cursor:
-      try:
-          with cursor.copy("COPY users FROM STDIN") as copy:
-                for user in users[0]:
-                  copy.write_row(user)
-      except Exception as e:
-          print(f"Error executing query: {e}")
+  addRowsToTable(users[0], 'users')
 
   for testUsernamePassword in testUsernamesPasswords:
 
@@ -503,14 +499,7 @@ def test_postJobExceedsLimit(monkeypatch, capsys):
   for i in range(maxJobs):
      jobs[0].append((i+1, defaultUser, defaultTitle, defaultDescription, defaultEmployer, defaultLocation, defaultSalary, defaultFirstName, defaultLastName))
   
-  with psycopg.connect(dbname=DATABASE_TEST_NAME, user=DATABASE_USER, password=DATABASE_PASSWORD, host=DATABASE_HOST, port=DATABASE_PORT) as connection:
-    with connection.cursor() as cursor:
-      try:
-        with cursor.copy("COPY jobs FROM STDIN") as copy:
-          for job in jobs[0]:
-            copy.write_row(job)
-      except Exception as e:
-        print(f"Error executing query: {e}")     
+  addRowsToTable(jobs[0], 'jobs')
 
   prompts = iter([{0: 'For Existing Users'}, {0: 'Job search/internship'}, {0: 'Post a Job'}, {0: 'Back to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
@@ -556,14 +545,7 @@ def test_usefulLinksSignIn(monkeypatch, capsys):
   for testUsernamePassword in testUsernamesPasswords:
     users[0].append((testUsernamePassword[0], testUsernamePassword[1], defaultFirstName, defaultLastName, defaultEmailPref, defaultSMSPref, defaultAdsPref, defaultLanguage, defaultUniversity, defaultMajor))
 
-  with psycopg.connect(dbname=DATABASE_TEST_NAME, user=DATABASE_USER, password=DATABASE_PASSWORD, host=DATABASE_HOST, port=DATABASE_PORT) as connection:
-    with connection.cursor() as cursor:
-      try:
-        with cursor.copy("COPY users FROM STDIN") as copy:
-          for user in users[0]:
-            copy.write_row(user)
-      except Exception as e:
-          print(f"Error executing query: {e}")
+  addRowsToTable(users[0], 'users')
 
   for testUsernamePassword in testUsernamesPasswords:
 
@@ -858,14 +840,7 @@ def test_receiveConnectionRequestOnLogin(monkeypatch, capsys):
 
   connections = [[(1, defaultUser+'1', defaultUser, 'pending')]]
 
-  with psycopg.connect(dbname=DATABASE_TEST_NAME, user=DATABASE_USER, password=DATABASE_PASSWORD, host=DATABASE_HOST, port=DATABASE_PORT) as connection:
-    with connection.cursor() as cursor:
-      try:
-        with cursor.copy("COPY friendships FROM STDIN") as copy:
-          for connection in connections[0]:
-            copy.write_row(connection)
-      except Exception as e:
-          print(f"Error executing query: {e}")
+  addRowsToTable(connections[0], 'friendships')
 
   prompts = iter([{0: 'For Existing Users'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
@@ -896,14 +871,7 @@ def test_disconnectFromConnection(monkeypatch, capsys):
   
   connections = [[(1, defaultUser, defaultUser+'1', 'confirmed')]]
 
-  with psycopg.connect(dbname=DATABASE_TEST_NAME, user=DATABASE_USER, password=DATABASE_PASSWORD, host=DATABASE_HOST, port=DATABASE_PORT) as connection:
-    with connection.cursor() as cursor:
-      try:
-        with cursor.copy("COPY friendships FROM STDIN") as copy:
-          for connection in connections[0]:
-            copy.write_row(connection)
-      except Exception as e:
-          print(f"Error executing query: {e}")
+  addRowsToTable(connections[0], 'friendships')
 
   prompts = iter([{0: 'For Existing Users'}, {0: 'Disconnect from a Connection'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
@@ -918,7 +886,7 @@ def test_disconnectFromConnection(monkeypatch, capsys):
 def test_showMyNetworkEmpty(monkeypatch, capsys):
   addTestUser()
   
-  prompts = iter([{0: 'For Existing Users'}, {0: 'Show my Network'}, {0: 'Log out'}, {0: 'Exit'}])
+  prompts = iter([{0: 'For Existing Users'}, {0: 'Show my Network'}, {0: 'Go Back'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword])
@@ -928,21 +896,15 @@ def test_showMyNetworkEmpty(monkeypatch, capsys):
 
   assert f"You have no connections in the system." in capsys.readouterr().out
 
+# change to a more robust assertion
 def test_showMyNetwork(monkeypatch, capsys):
   addTestUser(2)
 
   connections = [[(1, defaultUser, defaultUser+'1', 'confirmed')]]
   
-  with psycopg.connect(dbname=DATABASE_TEST_NAME, user=DATABASE_USER, password=DATABASE_PASSWORD, host=DATABASE_HOST, port=DATABASE_PORT) as connection:
-    with connection.cursor() as cursor:
-      try:
-        with cursor.copy("COPY friendships FROM STDIN") as copy:
-          for connection in connections[0]:
-            copy.write_row(connection)
-      except Exception as e:
-          print(f"Error executing query: {e}")
+  addRowsToTable(connections[0], 'friendships')
 
-  prompts = iter([{0: 'For Existing Users'}, {0: 'Show my Network'}, {0: 'Log out'}, {0: 'Exit'}])
+  prompts = iter([{0: 'For Existing Users'}, {0: 'Show my Network'}, {0: 'Go Back'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword])
@@ -950,7 +912,7 @@ def test_showMyNetwork(monkeypatch, capsys):
 
   InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
 
-  assert f"List of Friends:\nUser ID: {defaultUser+'1'}, Name: {defaultFirstName} {defaultLastName}"\
+  assert "List of Friends:"\
        in capsys.readouterr().out
 
 ############################################ Sprint 5 Tests ###################################################

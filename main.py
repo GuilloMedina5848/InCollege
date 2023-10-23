@@ -920,7 +920,7 @@ class InCollegeServer():
                     University: {university}\n
                     Major: {major}
                     """
-        
+
         if has_education:
             profile = profile + f"""
                     Attended {school_name} from {year_started} to {year_ended} to obtain a {degree}.
@@ -1290,20 +1290,20 @@ class InCollegeServer():
                 options.append(f"User ID: {friend[0]}, Name: {friend[1]} {friend[2]} (View Profile)")
                 ids.append(friend[0])
             options.append("Go Back")
+
+            choice = prompt({
+                            "type": "list",
+                            "message" : "Main Menu:",
+                            "choices": options
+                        })
+            
+            if choice[0] == "Go Back":
+                return
+            
+            self.viewProfile(ids[options.index(choice[0])])
+
         else:
             print("\nYou have no connections in the system.")
-
-
-        choice = prompt({
-                        "type": "list",
-                        "message" : "Main Menu:",
-                        "choices": options
-                    })
-        
-        if choice[0] == "Go Back":
-            return
-        
-        self.viewProfile(ids[options.index(choice[0])])
 
     def disconnectFriend(self):
         friend_id = input("Enter the User ID of the connection you want to disconnect from: ")
