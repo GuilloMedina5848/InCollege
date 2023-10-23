@@ -1,3 +1,6 @@
+py -m pytest main_test.py 
+py main.py
+
 incollegedb.backup is the backup database file created using 'pg_dump'
 How to restore the database in your local machine:
     Prerequisites: Make sure you have PostgreSQL and its utilities (psql, createdb, pg_restore) installed on your local machine.
@@ -87,7 +90,9 @@ CREATE TABLE jobs (
     description TEXT,
     employer VARCHAR(255) NOT NULL,
     location VARCHAR(255) NOT NULL,
-    salary DECIMAL
+    salary DECIMAL,
+    first_name VARCHAR(255),
+    last_name VARCHAR(255)
 );
 
 CREATE TABLE friendships (
@@ -95,6 +100,33 @@ CREATE TABLE friendships (
     student1_id VARCHAR(255) REFERENCES users(user_id),
     student2_id VARCHAR(255) REFERENCES users(user_id),
     status TEXT CHECK (status IN ('pending', 'confirmed'))
+);
+
+CREATE TABLE profiles (
+    profile_id SERIAL PRIMARY KEY,
+    user_id VARCHAR(255) REFERENCES users(user_id),
+    title TEXT,
+    about TEXT
+);
+
+CREATE TABLE experiences (
+    experience_id SERIAL PRIMARY KEY,
+    user_id VARCHAR(255) REFERENCES users(user_id),
+    title VARCHAR(255),
+    employer VARCHAR(255),
+    date_started DATE,
+    date_ended DATE,
+    location VARCHAR(255),
+    description TEXT
+);
+
+CREATE TABLE educations (
+    education_id SERIAL PRIMARY KEY,
+    user_id VARCHAR(255) REFERENCES users(user_id),
+    school_name VARCHAR(255),
+    degree VARCHAR(255),
+    year_started INT,
+    year_ended INT
 );
 
 ------------------------------------------------------------------------------------------------------
