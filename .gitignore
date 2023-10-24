@@ -1,0 +1,7 @@
+
+*.pyc
+/.cache
+/.pytest_cache
+/.pythonlibs
+/.upm
+/__pycache__
