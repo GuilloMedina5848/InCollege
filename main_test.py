@@ -19,6 +19,8 @@ defaultAdsPref = True
 defaultLanguage = "English"
 defaultUniversity = "USF"
 defaultMajor = "CS"
+defaultProfileTitle = None
+defaultProfileAbout = None
 defaultUserTuple = (defaultUser, defaultPassword, defaultFirstName, defaultLastName, defaultEmailPref, defaultSMSPref, defaultAdsPref, defaultLanguage, defaultUniversity, defaultMajor)
 defaultUserTupleString = f"('{defaultUser}', '{defaultPassword}', '{defaultFirstName}', '{defaultLastName}', {defaultEmailPref}, {defaultSMSPref}, {defaultAdsPref}, '{defaultLanguage}', '{defaultUniversity}', '{defaultMajor}')"
 defaultUserTable = [[defaultUserTuple]]
@@ -35,7 +37,7 @@ defaultJobTuple = (1, defaultUser, defaultTitle, defaultDescription, defaultEmpl
 defaultJobTable = [[defaultJobTuple]]
 maxJobs = 5
 
-tables = ["jobs", "friendships", "users"] # this needs to be in an order such that the tables with linked keys are deleted first
+tables = ["educations", "experiences", "profiles", "jobs", "friendships", "users"] # this needs to be in an order such that the tables with linked keys are deleted first
 
 DATABASE_TEST_NAME = "incollegetestdb"
 DATABASE_ORIGINAL = DATABASE_NAME_
@@ -931,15 +933,68 @@ def test_editEducation():
 def test_education():
   pass
 
-def test_editProfile():
-  pass
+def test_createProfile(monkeypatch, capsys):
+  addTestUser()
+  
+  prompts = iter([{0: 'For Existing Users'}, {0: 'Profile'}, {0: 'Create Profile'}, {0: 'Finish'}, {0: 'Log out'}, {0: 'Exit'}])
+  monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
-def test_viewProfile():
-  pass
+  inputs = iter([defaultUser, defaultPassword])
+  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
 
-def test_profile():
-  pass
+  InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
 
+  assert f"Profile Created" in capsys.readouterr().out
+  assert readDB("profiles")[0][0][1] == defaultUser 
+
+def test_editProfile(monkeypatch, capsys):
+  addTestUser()
+
+  profile = [[1, defaultUser, defaultProfileTitle, defaultProfileAbout]]
+  addRowsToTable(profile, 'profiles')
+
+  prompts = iter([{0: 'For Existing Users'}, {0: 'Profile'}, {0: 'Edit Profile'}, {0: 'Title'}, {0: 'Finish'}, {0: 'Log out'}, {0: 'Exit'}])
+  monkeypatch.setattr(promptModule, lambda _: next(prompts))
+
+  inputs = iter([defaultUser, defaultPassword, "Title-example"])
+  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+  InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
+
+  assert f"Profile Edited" in capsys.readouterr().out
+  assert readDB("profiles")[0][0][2] == "Title-example" 
+
+def test_viewFriendEmptyProfile(monkeypatch, capsys):
+  addTestUser(2)
+  connections = [[1, defaultUser, defaultUser+"1", "confirmed"]]
+  addRowsToTable(connections, "friendships")
+
+  prompts = iter([{0: 'For Existing Users'}, {0: 'Show my Network'}, {0: f'User ID: {defaultUser+"1"}, Name: {defaultFirstName} {defaultLastName} (View Profile)'}, {0: 'Log out'}, {0: 'Exit'}])
+  monkeypatch.setattr(promptModule, lambda _: next(prompts))
+
+  inputs = iter([defaultUser, defaultPassword])
+  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+  InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
+
+  assert f"This user has not created a profile." in capsys.readouterr().out
+
+def test_viewFriendProfile(monkeypatch, capsys):
+  addTestUser(2)
+  connections = [[1, defaultUser, defaultUser+"1", "confirmed"]]
+  addRowsToTable(connections, "friendships")
+  profile = [[1, defaultUser+"1", defaultProfileTitle, defaultProfileAbout]]
+  addRowsToTable(profile, "profiles")
+
+  prompts = iter([{0: 'For Existing Users'}, {0: 'Show my Network'}, {0: f'User ID: {defaultUser+"1"}, Name: {defaultFirstName} {defaultLastName} (View Profile)'}, {0: 'Log out'}, {0: 'Exit'}])
+  monkeypatch.setattr(promptModule, lambda _: next(prompts))
+
+  inputs = iter([defaultUser, defaultPassword])
+  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+  InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
+
+  assert f"{defaultFirstName} {defaultLastName}\n\n\n                    {defaultProfileTitle}\n\n\n                    {defaultProfileAbout}\n\n\n                    University: {defaultUniversity}\n\n                    Major: {defaultMajor}" in capsys.readouterr().out
 
 def test_dummy():
   dropTestDatabase()

@@ -1,5 +1,5 @@
 import re, helper, psycopg
-from InquirerPy import prompt
+from InquirerPy import prompt 
 from psycopg.rows import dict_row
 
 # Connect to your PostgreSQL server
@@ -969,6 +969,7 @@ class InCollegeServer():
                     return
                 case "Edit Profile":
                     self.editProfile()
+                    print("Profile Edited")
                 case "Create Profile":
                     with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
                         with connection.cursor() as cursor:
@@ -977,6 +978,7 @@ class InCollegeServer():
                                         VALUES ('{self.userID}');
                                         """)
                     self.editProfile()
+                    print("Profile Created")
                 case __:
                     raise ValueError
 
