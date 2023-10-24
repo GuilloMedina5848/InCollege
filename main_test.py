@@ -19,6 +19,8 @@ defaultAdsPref = True
 defaultLanguage = "English"
 defaultUniversity = "USF"
 defaultMajor = "CS"
+defaultProfileTitle = "Title"
+defaultProfileAbout = "About"
 defaultUserTuple = (defaultUser, defaultPassword, defaultFirstName, defaultLastName, defaultEmailPref, defaultSMSPref, defaultAdsPref, defaultLanguage, defaultUniversity, defaultMajor)
 defaultUserTupleString = f"('{defaultUser}', '{defaultPassword}', '{defaultFirstName}', '{defaultLastName}', {defaultEmailPref}, {defaultSMSPref}, {defaultAdsPref}, '{defaultLanguage}', '{defaultUniversity}', '{defaultMajor}')"
 defaultUserTable = [[defaultUserTuple]]
@@ -35,7 +37,7 @@ defaultJobTuple = (1, defaultUser, defaultTitle, defaultDescription, defaultEmpl
 defaultJobTable = [[defaultJobTuple]]
 maxJobs = 5
 
-tables = ["jobs", "friendships", "users"] # this needs to be in an order such that the tables with linked keys are deleted first
+tables = ["educations", "experiences", "profiles", "jobs", "friendships", "users"] # this needs to be in an order such that the tables with linked keys are deleted first
 
 DATABASE_TEST_NAME = "incollegetestdb"
 DATABASE_ORIGINAL = DATABASE_NAME_
@@ -55,12 +57,33 @@ def dropTestDatabase():
 def clear():
     with psycopg.connect(dbname=DATABASE_TEST_NAME, user=DATABASE_USER, password=DATABASE_PASSWORD, host=DATABASE_HOST, port=DATABASE_PORT) as connection:
         with connection.cursor() as cursor:
-            for table in tables:
+            # List of tables and their sequences if any.
+            # Dependent tables (with foreign keys) should be deleted before primary tables.
+            tables_sequences = [
+                ("educations", None),
+                ("experiences", None),
+                ("profiles", None),
+                ("jobs", "jobs_job_id_seq"),
+                ("friendships", None),
+                ("users", None)
+            ]
+
+            for table, sequence in tables_sequences:
+                # Try deleting data from the table
                 try:
-                    cursor.execute(f"""DELETE FROM {table}""")
+                    cursor.execute(f"DELETE FROM {table}")
                 except Exception as e:
-                    print(f"Error executing query: {e}")
-            cursor.execute("""ALTER SEQUENCE jobs_job_id_seq RESTART WITH 1""")
+                    print(f"Error deleting data from {table}: {e}")
+
+                # If there's a sequence associated, reset it
+                if sequence:
+                    try:
+                        cursor.execute(f"ALTER SEQUENCE {sequence} RESTART WITH 1")
+                    except Exception as e:
+                        print(f"Error resetting sequence {sequence}: {e}")
+
+            # Commit all changes to the database
+            connection.commit()
 
 # function to start tests which require an existing user to be able to log in
 # don't use this function unless you need an existing user! start the function with clear() instead
@@ -107,6 +130,16 @@ def readDB(select = "all"):
                       print(f"Error executing query: {e}")
     return read
 
+def addRowsToTable(rows, table):
+  with psycopg.connect(dbname=DATABASE_TEST_NAME, user=DATABASE_USER, password=DATABASE_PASSWORD, host=DATABASE_HOST, port=DATABASE_PORT) as connection:
+    with connection.cursor() as cursor:
+      try:
+        with cursor.copy(f"COPY {table} FROM STDIN") as copy:
+          for row in rows:
+            copy.write_row(row)
+      except Exception as e:
+          print(f"Error executing query: {e}")
+
 helper.createDatabase(DATABASE_USER, DATABASE_PASSWORD, DATABASE_TEST_NAME, DATABASE_HOST, DATABASE_PORT)
 
 ###########
@@ -131,7 +164,6 @@ helper.createDatabase(DATABASE_USER, DATABASE_PASSWORD, DATABASE_TEST_NAME, DATA
 # the .split('\n') string method changes the string into a list of strings separated by the newline character ("This is an example".split(' ') returns ['This', 'is', 'an', 'example'])
 # finally, we use array subscripting to get the output string we're looking for. In most cases I've used the second-to-last string (the last string is empty), which should be "Logging out." for most test cases
 # but we can target any string, so for example we can assert that the nth string will be "All permitted accounts have been created..." for a test case that tests the 5 user limit functionality
-
 
 # tests if the main screen exits correctly
 def test_mainScreen(monkeypatch, capsys):
@@ -314,14 +346,7 @@ def test_newUserInvalidExisting(monkeypatch, capsys):
   for testUsername in testUsernames:
     users[0].append((testUsername, defaultPassword, defaultFirstName, defaultLastName, defaultEmailPref, defaultSMSPref, defaultAdsPref, defaultLanguage, defaultUniversity, defaultMajor))
 
-  with psycopg.connect(dbname=DATABASE_TEST_NAME, user=DATABASE_USER, password=DATABASE_PASSWORD, host=DATABASE_HOST, port=DATABASE_PORT) as connection:
-    with connection.cursor() as cursor:
-      try:
-          with cursor.copy("COPY users FROM STDIN") as copy:
-                for user in users[0]:
-                  copy.write_row(user)
-      except Exception as e:
-          print(f"Error executing query: {e}")
+  addRowsToTable(users[0], 'users')
 
   for testUsername in testUsernames:
 
@@ -370,14 +395,7 @@ def test_loginExistingUser(monkeypatch, capsys):
   for testUsernamePassword in testUsernamesPasswords:
     users[0].append((testUsernamePassword[0], testUsernamePassword[1], defaultFirstName, defaultLastName, defaultEmailPref, defaultSMSPref, defaultAdsPref, defaultLanguage, defaultUniversity, defaultMajor))
 
-  with psycopg.connect(dbname=DATABASE_TEST_NAME, user=DATABASE_USER, password=DATABASE_PASSWORD, host=DATABASE_HOST, port=DATABASE_PORT) as connection:
-    with connection.cursor() as cursor:
-      try:
-          with cursor.copy("COPY users FROM STDIN") as copy:
-                for user in users[0]:
-                  copy.write_row(user)
-      except Exception as e:
-          print(f"Error executing query: {e}")
+  addRowsToTable(users[0], 'users')
 
   for testUsernamePassword in testUsernamesPasswords:
 
@@ -429,42 +447,7 @@ def test_loginInvalidPassword(monkeypatch, capsys):
     captured_output = capsys.readouterr().out
     assert "\nIncorrect username / password, please try again\n" in captured_output
 
-""" deprecated tests, test for friend function instead
 
-# tests the search user function
-def test_searchUser(monkeypatch, capsys):
-  addTestUser()
-
-  prompts = iter([{0: 'For Existing Users'}, {0: 'Find someone you know'}, {0: 'Last Name'}, {0: 'Exit'}, {0: 'Log out'}, {0: 'Exit'}])
-  monkeypatch.setattr(promptModule, lambda _: next(prompts))
-
-  inputs = iter([defaultUser, defaultPassword, defaultLastName])
-  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
-
-  InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
-
-  assert "They are a part of the InCollege system." in capsys.readouterr().out
-
-# tests the search user function with a name that is not registered with inCollege
-def test_searchInvalidUser(monkeypatch, capsys):
-  addTestUser()
-
-  testNames = [["User", "pyTest"], ["pyTest", ""], ["", "User"], ["", ""]]
-
-  for testName in testNames:
-
-    prompts = iter([{0: 'For Existing Users'}, {0: 'Find someone you know'}, {0: 'Log out'}, {0: 'Exit'}])
-    monkeypatch.setattr(promptModule, lambda _: next(prompts))
-
-    inputs = iter([defaultUser, defaultPassword, testName[0], testName[1]])
-    monkeypatch.setattr('builtins.input', lambda _: next(inputs))
-
-    InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
-
-    assert "They are not yet a part of the InCollege system yet." in capsys.readouterr().out
-
-"""
-    
 # tests the search job feature
 def test_searchJob(monkeypatch, capsys):
   addTestUser()
@@ -503,14 +486,7 @@ def test_postJobExceedsLimit(monkeypatch, capsys):
   for i in range(maxJobs):
      jobs[0].append((i+1, defaultUser, defaultTitle, defaultDescription, defaultEmployer, defaultLocation, defaultSalary, defaultFirstName, defaultLastName))
   
-  with psycopg.connect(dbname=DATABASE_TEST_NAME, user=DATABASE_USER, password=DATABASE_PASSWORD, host=DATABASE_HOST, port=DATABASE_PORT) as connection:
-    with connection.cursor() as cursor:
-      try:
-        with cursor.copy("COPY jobs FROM STDIN") as copy:
-          for job in jobs[0]:
-            copy.write_row(job)
-      except Exception as e:
-        print(f"Error executing query: {e}")     
+  addRowsToTable(jobs[0], 'jobs')
 
   prompts = iter([{0: 'For Existing Users'}, {0: 'Job search/internship'}, {0: 'Post a Job'}, {0: 'Back to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
@@ -556,14 +532,7 @@ def test_usefulLinksSignIn(monkeypatch, capsys):
   for testUsernamePassword in testUsernamesPasswords:
     users[0].append((testUsernamePassword[0], testUsernamePassword[1], defaultFirstName, defaultLastName, defaultEmailPref, defaultSMSPref, defaultAdsPref, defaultLanguage, defaultUniversity, defaultMajor))
 
-  with psycopg.connect(dbname=DATABASE_TEST_NAME, user=DATABASE_USER, password=DATABASE_PASSWORD, host=DATABASE_HOST, port=DATABASE_PORT) as connection:
-    with connection.cursor() as cursor:
-      try:
-        with cursor.copy("COPY users FROM STDIN") as copy:
-          for user in users[0]:
-            copy.write_row(user)
-      except Exception as e:
-          print(f"Error executing query: {e}")
+  addRowsToTable(users[0], 'users')
 
   for testUsernamePassword in testUsernamesPasswords:
 
@@ -858,14 +827,7 @@ def test_receiveConnectionRequestOnLogin(monkeypatch, capsys):
 
   connections = [[(1, defaultUser+'1', defaultUser, 'pending')]]
 
-  with psycopg.connect(dbname=DATABASE_TEST_NAME, user=DATABASE_USER, password=DATABASE_PASSWORD, host=DATABASE_HOST, port=DATABASE_PORT) as connection:
-    with connection.cursor() as cursor:
-      try:
-        with cursor.copy("COPY friendships FROM STDIN") as copy:
-          for connection in connections[0]:
-            copy.write_row(connection)
-      except Exception as e:
-          print(f"Error executing query: {e}")
+  addRowsToTable(connections[0], 'friendships')
 
   prompts = iter([{0: 'For Existing Users'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
@@ -896,14 +858,7 @@ def test_disconnectFromConnection(monkeypatch, capsys):
   
   connections = [[(1, defaultUser, defaultUser+'1', 'confirmed')]]
 
-  with psycopg.connect(dbname=DATABASE_TEST_NAME, user=DATABASE_USER, password=DATABASE_PASSWORD, host=DATABASE_HOST, port=DATABASE_PORT) as connection:
-    with connection.cursor() as cursor:
-      try:
-        with cursor.copy("COPY friendships FROM STDIN") as copy:
-          for connection in connections[0]:
-            copy.write_row(connection)
-      except Exception as e:
-          print(f"Error executing query: {e}")
+  addRowsToTable(connections[0], 'friendships')
 
   prompts = iter([{0: 'For Existing Users'}, {0: 'Disconnect from a Connection'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
@@ -918,7 +873,7 @@ def test_disconnectFromConnection(monkeypatch, capsys):
 def test_showMyNetworkEmpty(monkeypatch, capsys):
   addTestUser()
   
-  prompts = iter([{0: 'For Existing Users'}, {0: 'Show my Network'}, {0: 'Log out'}, {0: 'Exit'}])
+  prompts = iter([{0: 'For Existing Users'}, {0: 'Show my Network'}, {0: 'Go Back'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword])
@@ -928,21 +883,15 @@ def test_showMyNetworkEmpty(monkeypatch, capsys):
 
   assert f"You have no connections in the system." in capsys.readouterr().out
 
+# change to a more robust assertion
 def test_showMyNetwork(monkeypatch, capsys):
   addTestUser(2)
 
   connections = [[(1, defaultUser, defaultUser+'1', 'confirmed')]]
   
-  with psycopg.connect(dbname=DATABASE_TEST_NAME, user=DATABASE_USER, password=DATABASE_PASSWORD, host=DATABASE_HOST, port=DATABASE_PORT) as connection:
-    with connection.cursor() as cursor:
-      try:
-        with cursor.copy("COPY friendships FROM STDIN") as copy:
-          for connection in connections[0]:
-            copy.write_row(connection)
-      except Exception as e:
-          print(f"Error executing query: {e}")
+  addRowsToTable(connections[0], 'friendships')
 
-  prompts = iter([{0: 'For Existing Users'}, {0: 'Show my Network'}, {0: 'Log out'}, {0: 'Exit'}])
+  prompts = iter([{0: 'For Existing Users'}, {0: 'Show my Network'}, {0: 'Go Back'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword])
@@ -950,10 +899,115 @@ def test_showMyNetwork(monkeypatch, capsys):
 
   InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
 
-  assert f"List of Friends:\nUser ID: {defaultUser+'1'}, Name: {defaultFirstName} {defaultLastName}"\
+  assert "List of Friends:"\
        in capsys.readouterr().out
 
-# workaround for pytest terminating after the last test function; userPaste needs to be called to recover the original data in Users.txt
+############################################ Sprint 5 Tests ###################################################
+
+def test_addJobExperience(monkeypatch, capsys):
+  # Test how the job experience is displayed
+  addTestUser()
+  mock_experience = [[1, defaultUser, 'Software Engineer', 'Tech Corp', '2022-01-01', '2022-12-31', 'New York', 'Developed software applications.']]
+  mock_profile = [[1, defaultUser, "Title", "About section"]]
+  addRowsToTable(mock_experience, "experiences")
+  addRowsToTable(mock_profile, "profiles")
+
+  prompts = iter([{0: 'For Existing Users'}, {0: 'Profile'}, {0: 'Go Back'}, {0: 'Log out'}, {0: 'Exit'}])
+  monkeypatch.setattr(promptModule, lambda _: next(prompts))
+  inputs = iter([defaultUser, defaultPassword])
+  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+  InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
+
+  assert f"Worked as a Software Engineer for Tech Corp, from 2022-01-01 to 2022-12-31, at New York:" in capsys.readouterr().out 
+
+def test_addEducation(monkeypatch, capsys):
+  addTestUser()
+  mock_education = [[1, defaultUser, "USF", "Computer Science", "2021", "2025"]]
+  mock_profile = [[1, defaultUser, "Title", "About section"]]
+  addRowsToTable(mock_education, "educations")
+  addRowsToTable(mock_profile, "profiles")
+  prompts = iter([{0: 'For Existing Users'}, {0: 'Profile'}, {0: 'Go Back'}, {0: 'Log out'}, {0: 'Exit'}])
+  monkeypatch.setattr(promptModule, lambda _: next(prompts))
+  inputs = iter([defaultUser, defaultPassword])
+  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+  InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
+
+  assert f"Attended USF from 2021 to 2025 to obtain a Computer Science." in capsys.readouterr().out 
+
+
+def test_createProfile(monkeypatch, capsys):
+  addTestUser()
+  
+  prompts = iter([{0: 'For Existing Users'}, {0: 'Profile'}, {0: 'Create Profile'}, {0: 'Finish'}, {0: 'Log out'}, {0: 'Exit'}])
+  monkeypatch.setattr(promptModule, lambda _: next(prompts))
+
+  inputs = iter([defaultUser, defaultPassword])
+  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+  InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
+
+  assert f"Profile Created" in capsys.readouterr().out
+  assert readDB("profiles")[0][0][1] == defaultUser 
+
+def test_editProfile(monkeypatch, capsys):
+  addTestUser()
+
+  profile = [[1, defaultUser, defaultProfileTitle, defaultProfileAbout]]
+  addRowsToTable(profile, 'profiles')
+
+  prompts = iter([{0: 'For Existing Users'}, {0: 'Profile'}, {0: 'Edit Profile'}, {0: 'Title'}, {0: 'Finish'}, {0: 'Log out'}, {0: 'Exit'}])
+  monkeypatch.setattr(promptModule, lambda _: next(prompts))
+
+  inputs = iter([defaultUser, defaultPassword, "Title-example"])
+  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+  InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
+
+  assert f"Profile Edited" in capsys.readouterr().out
+  assert readDB("profiles")[0][0][2] == "Title-example" 
+
+def test_viewFriendEmptyProfile(monkeypatch, capsys):
+  addTestUser(2)
+  connections = [[1, defaultUser, defaultUser+"1", "confirmed"]]
+  addRowsToTable(connections, "friendships")
+
+  prompts = iter([{0: 'For Existing Users'}, {0: 'Show my Network'}, {0: f'User ID: {defaultUser+"1"}, Name: {defaultFirstName} {defaultLastName}'}, {0: 'Log out'}, {0: 'Exit'}])
+  monkeypatch.setattr(promptModule, lambda _: next(prompts))
+
+  inputs = iter([defaultUser, defaultPassword])
+  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+  InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
+
+  assert f"This user has not created a profile." in capsys.readouterr().out
+
+def test_viewFriendProfile(monkeypatch, capsys):
+  addTestUser(2)
+  connections = [[1, defaultUser, defaultUser+"1", "confirmed"]]
+  addRowsToTable(connections, "friendships")
+  profile = [[1, defaultUser+"1", defaultProfileTitle, defaultProfileAbout]]
+  addRowsToTable(profile, "profiles")
+
+  prompts = iter([{0: 'For Existing Users'}, {0: 'Show my Network'}, {0: f'User ID: {defaultUser+"1"}, Name: {defaultFirstName} {defaultLastName} (View Profile)'}, {0: 'Log out'}, {0: 'Exit'}])
+  monkeypatch.setattr(promptModule, lambda _: next(prompts))
+
+  inputs = iter([defaultUser, defaultPassword])
+  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+  InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
+  output = f"""
+                    {defaultFirstName} {defaultLastName}
+                    """ + f"""
+                    {defaultProfileTitle}
+                    """ + f"""
+                    {defaultProfileAbout}
+                    """ + f"""
+                    University: {defaultUniversity}
+                    Major: {defaultMajor}
+                    """
+  assert output in capsys.readouterr().out
 
 def test_dummy():
   dropTestDatabase()
