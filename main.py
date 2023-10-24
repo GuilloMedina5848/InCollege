@@ -820,7 +820,7 @@ class InCollegeServer():
             choice = prompt({
                     "type": "list",
                     "message": "Edit Profile",
-                    "choices": ["First Name", "Last Name", "Title", "Major", "University", "Information", "About", "Education", "Job Experience", "Finish"]
+                    "choices": ["First Name", "Last Name", "Title", "Major", "University", "About", "Education", "Job Experience", "Finish"]
                 })
             
             if choice[0] == "Finish":

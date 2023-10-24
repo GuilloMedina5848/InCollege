@@ -57,12 +57,33 @@ def dropTestDatabase():
 def clear():
     with psycopg.connect(dbname=DATABASE_TEST_NAME, user=DATABASE_USER, password=DATABASE_PASSWORD, host=DATABASE_HOST, port=DATABASE_PORT) as connection:
         with connection.cursor() as cursor:
-            for table in tables:
+            # List of tables and their sequences if any.
+            # Dependent tables (with foreign keys) should be deleted before primary tables.
+            tables_sequences = [
+                ("educations", None),
+                ("experiences", None),
+                ("profiles", None),
+                ("jobs", "jobs_job_id_seq"),
+                ("friendships", None),
+                ("users", None)
+            ]
+
+            for table, sequence in tables_sequences:
+                # Try deleting data from the table
                 try:
-                    cursor.execute(f"""DELETE FROM {table}""")
+                    cursor.execute(f"DELETE FROM {table}")
                 except Exception as e:
-                    print(f"Error executing query: {e}")
-            cursor.execute("""ALTER SEQUENCE jobs_job_id_seq RESTART WITH 1""")
+                    print(f"Error deleting data from {table}: {e}")
+
+                # If there's a sequence associated, reset it
+                if sequence:
+                    try:
+                        cursor.execute(f"ALTER SEQUENCE {sequence} RESTART WITH 1")
+                    except Exception as e:
+                        print(f"Error resetting sequence {sequence}: {e}")
+
+            # Commit all changes to the database
+            connection.commit()
 
 # function to start tests which require an existing user to be able to log in
 # don't use this function unless you need an existing user! start the function with clear() instead
@@ -919,19 +940,38 @@ def test_showMyNetwork(monkeypatch, capsys):
 
 ############################################ Sprint 5 Tests ###################################################
 
-def test_editJobExperience(monkeypatch):
-  pass
-  
-
-def test_jobExperience():
+def test_addJobExperience(monkeypatch, capsys):
   # Test how the job experience is displayed
-  pass
+  addTestUser()
+  mock_experience = [[1, defaultUser, 'Software Engineer', 'Tech Corp', '2022-01-01', '2022-12-31', 'New York', 'Developed software applications.']]
+  mock_profile = [[1, defaultUser, "Title", "About section"]]
+  addRowsToTable(mock_experience, "experiences")
+  addRowsToTable(mock_profile, "profiles")
 
-def test_editEducation():
-  pass
+  prompts = iter([{0: 'For Existing Users'}, {0: 'Profile'}, {0: 'Go Back'}, {0: 'Log out'}, {0: 'Exit'}])
+  monkeypatch.setattr(promptModule, lambda _: next(prompts))
+  inputs = iter([defaultUser, defaultPassword])
+  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
 
-def test_education():
-  pass
+  InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
+
+  assert f"Worked as a Software Engineer for Tech Corp, from 2022-01-01 to 2022-12-31, at New York:" in capsys.readouterr().out 
+
+def test_addEducation(monkeypatch, capsys):
+  addTestUser()
+  mock_education = [[1, defaultUser, "USF", "Computer Science", "2021", "2025"]]
+  mock_profile = [[1, defaultUser, "Title", "About section"]]
+  addRowsToTable(mock_education, "educations")
+  addRowsToTable(mock_profile, "profiles")
+  prompts = iter([{0: 'For Existing Users'}, {0: 'Profile'}, {0: 'Go Back'}, {0: 'Log out'}, {0: 'Exit'}])
+  monkeypatch.setattr(promptModule, lambda _: next(prompts))
+  inputs = iter([defaultUser, defaultPassword])
+  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+  InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
+
+  assert f"Attended USF from 2021 to 2025 to obtain a Computer Science." in capsys.readouterr().out 
+
 
 def test_createProfile(monkeypatch, capsys):
   addTestUser()
