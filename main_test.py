@@ -19,8 +19,8 @@ defaultAdsPref = True
 defaultLanguage = "English"
 defaultUniversity = "USF"
 defaultMajor = "CS"
-defaultProfileTitle = None
-defaultProfileAbout = None
+defaultProfileTitle = "Title"
+defaultProfileAbout = "About"
 defaultUserTuple = (defaultUser, defaultPassword, defaultFirstName, defaultLastName, defaultEmailPref, defaultSMSPref, defaultAdsPref, defaultLanguage, defaultUniversity, defaultMajor)
 defaultUserTupleString = f"('{defaultUser}', '{defaultPassword}', '{defaultFirstName}', '{defaultLastName}', {defaultEmailPref}, {defaultSMSPref}, {defaultAdsPref}, '{defaultLanguage}', '{defaultUniversity}', '{defaultMajor}')"
 defaultUserTable = [[defaultUserTuple]]
@@ -164,7 +164,6 @@ helper.createDatabase(DATABASE_USER, DATABASE_PASSWORD, DATABASE_TEST_NAME, DATA
 # the .split('\n') string method changes the string into a list of strings separated by the newline character ("This is an example".split(' ') returns ['This', 'is', 'an', 'example'])
 # finally, we use array subscripting to get the output string we're looking for. In most cases I've used the second-to-last string (the last string is empty), which should be "Logging out." for most test cases
 # but we can target any string, so for example we can assert that the nth string will be "All permitted accounts have been created..." for a test case that tests the 5 user limit functionality
-
 
 # tests if the main screen exits correctly
 def test_mainScreen(monkeypatch, capsys):
@@ -448,42 +447,7 @@ def test_loginInvalidPassword(monkeypatch, capsys):
     captured_output = capsys.readouterr().out
     assert "\nIncorrect username / password, please try again\n" in captured_output
 
-""" deprecated tests, test for friend function instead
 
-# tests the search user function
-def test_searchUser(monkeypatch, capsys):
-  addTestUser()
-
-  prompts = iter([{0: 'For Existing Users'}, {0: 'Find someone you know'}, {0: 'Last Name'}, {0: 'Exit'}, {0: 'Log out'}, {0: 'Exit'}])
-  monkeypatch.setattr(promptModule, lambda _: next(prompts))
-
-  inputs = iter([defaultUser, defaultPassword, defaultLastName])
-  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
-
-  InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
-
-  assert "They are a part of the InCollege system." in capsys.readouterr().out
-
-# tests the search user function with a name that is not registered with inCollege
-def test_searchInvalidUser(monkeypatch, capsys):
-  addTestUser()
-
-  testNames = [["User", "pyTest"], ["pyTest", ""], ["", "User"], ["", ""]]
-
-  for testName in testNames:
-
-    prompts = iter([{0: 'For Existing Users'}, {0: 'Find someone you know'}, {0: 'Log out'}, {0: 'Exit'}])
-    monkeypatch.setattr(promptModule, lambda _: next(prompts))
-
-    inputs = iter([defaultUser, defaultPassword, testName[0], testName[1]])
-    monkeypatch.setattr('builtins.input', lambda _: next(inputs))
-
-    InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
-
-    assert "They are not yet a part of the InCollege system yet." in capsys.readouterr().out
-
-"""
-    
 # tests the search job feature
 def test_searchJob(monkeypatch, capsys):
   addTestUser()
@@ -1033,8 +997,17 @@ def test_viewFriendProfile(monkeypatch, capsys):
   monkeypatch.setattr('builtins.input', lambda _: next(inputs))
 
   InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
-
-  assert f"{defaultFirstName} {defaultLastName}\n\n\n                    {defaultProfileTitle}\n\n\n                    {defaultProfileAbout}\n\n\n                    University: {defaultUniversity}\n\n                    Major: {defaultMajor}" in capsys.readouterr().out
+  output = f"""
+                    {defaultFirstName} {defaultLastName}
+                    """ + f"""
+                    {defaultProfileTitle}
+                    """ + f"""
+                    {defaultProfileAbout}
+                    """ + f"""
+                    University: {defaultUniversity}
+                    Major: {defaultMajor}
+                    """
+  assert output in capsys.readouterr().out
 
 def test_dummy():
   dropTestDatabase()

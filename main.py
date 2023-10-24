@@ -362,6 +362,35 @@ class InCollegeServer():
         
         return f"{year}-{month}-{day}"
 
+    def completeRow(self, table, crit = []):
+        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+            with connection.cursor() as cursor:
+            
+                query = f"""SELECT *
+                            FROM {table}
+                            WHERE user_id = '{self.userID}'
+                            """
+                
+                if crit:
+                    i = 0
+                    while i < len(crit)-1:
+                        query = query + f""" AND {crit[i]} = {crit[i+1]}"""
+                        i = i+2
+
+                query = query + ';'
+                cursor.execute(query)
+                vals = cursor.fetchall()
+
+                if not vals:
+                    return False
+                
+                vals = vals[0]
+
+                if None in vals:
+                    return False
+                
+                return True
+                
     # change crit/crit2 method to accept a list of lists with critical rows and critical entries?
     def changeEntry(self, table, column, entry, crit = "", crit2 = ""):
 
@@ -658,7 +687,10 @@ class InCollegeServer():
                 })
 
             if choice[0] == "Finish":
-                break
+                if self.completeRow('experiences', ['experience_id', id]):
+                    break
+                else:
+                    print("You have missing information. Complete each field before finishing.")
             
             else:
                 if choice[0] == "Date Started" or choice[0] == "Date Ended":
@@ -754,10 +786,22 @@ class InCollegeServer():
                 })
             
             if choice[0] == "Finish":
-                break
+                if self.completeRow('educations'):
+                    break
+                else:
+                    print("You have missing information. Complete each field before finishing.")
 
             else:
-                entry = input(f"Change {choice[0]} to what? ")
+                while True:
+                    entry = input(f"Change {choice[0].lower()} to what? ")
+                    if choice[0] == "Year Started" or choice[0] == "Year Ended":
+                        if entry.isnumeric():
+                            if int(entry) > 1 and int(entry) < 9999:
+                                break
+                        print("Please input a valid year.")
+                        continue
+                    break
+
                 # add logic to verify/change input based on selection
                 column = choice[0].lower().replace(' ', '_')
                 self.changeEntry("educations", column, entry)
@@ -782,7 +826,7 @@ class InCollegeServer():
                     vals = list(vals[0])
                     print(f"""
                           Current education:
-                          Attended {vals[2]} for {vals[5] - vals[4]} years, from {vals[4]} to {vals[5]}, to obtain a {vals[3]}.
+                          Attended {vals[2]} from {vals[4]} to {vals[5]} to obtain a {vals[3]}.
                           """)
                     options.append("Edit Education")
 
@@ -927,10 +971,20 @@ class InCollegeServer():
                         i += 1
 
         profile = f"""
-                    {first_name} {last_name}\n\n
-                    {title}\n\n
-                    {about}\n\n
-                    University: {university}\n
+                    {first_name} {last_name}
+                    """
+        if title:
+            profile = profile + f"""
+                    {title}
+                    """
+
+        if about:
+            profile = profile + f"""
+                    {about}
+                    """
+
+        profile = profile + f"""
+                    University: {university}
                     Major: {major}
                     """
 
