@@ -846,6 +846,19 @@ class InCollegeServer():
                 }
                 self.changeEntry(table_map.get(column), column, entry)
 
+    def hasProfile(self, id):
+        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+            with connection.cursor() as cursor:
+                try:
+                    cursor.execute(f"""SELECT *
+                                    FROM profiles
+                                    WHERE user_id = '{id}'""")
+                    if not cursor.fetchall():
+                        raise Exception
+                    return True
+                except:
+                    return False
+
     def viewProfile(self, id):
         
         with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
@@ -1222,27 +1235,31 @@ class InCollegeServer():
         
         print(f"\nFriend request from: {name[0]} {name[1]}")
 
-        choice = input("Do you want to accept this friend request? (yes/no): ").lower()
-
         with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
             with connection.cursor() as cursor:
-                if choice == 'yes':
-                    # Update the friendship status to confirmed
-                    update_query = """
-                    UPDATE friendships 
-                    SET status = 'confirmed' 
-                    WHERE student1_id = %s AND student2_id = %s;
-                    """
-                    cursor.execute(update_query, (from_user_id, self.userID))
-                    print("Friend request accepted!")
-                else:
-                    # Delete the friend request record
-                    delete_query = """
-                    DELETE FROM friendships 
-                    WHERE student1_id = %s AND student2_id = %s;
-                    """
-                    cursor.execute(delete_query, (from_user_id, self.userID))
-                    print("Friend request rejected!")
+                while True:
+                    choice = input("Do you want to accept this friend request? (yes/no): ").lower()
+                    if choice == 'yes':
+                        # Update the friendship status to confirmed
+                        update_query = """
+                        UPDATE friendships 
+                        SET status = 'confirmed' 
+                        WHERE student1_id = %s AND student2_id = %s;
+                        """
+                        cursor.execute(update_query, (from_user_id, self.userID))
+                        print("Friend request accepted!")
+                        break
+                    elif choice == 'no':
+                        # Delete the friend request record
+                        delete_query = """
+                        DELETE FROM friendships 
+                        WHERE student1_id = %s AND student2_id = %s;
+                        """
+                        cursor.execute(delete_query, (from_user_id, self.userID))
+                        print("Friend request rejected!")
+                        break
+                    else:
+                        print("Unrecognized input. Please enter yes or no.")
 
     def viewPendingRequests(self):
         with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
@@ -1289,7 +1306,9 @@ class InCollegeServer():
         if friends:
             print("\nList of Friends:")
             for friend in friends:
-                options.append(f"User ID: {friend[0]}, Name: {friend[1]} {friend[2]} (View Profile)")
+                options.append(f"User ID: {friend[0]}, Name: {friend[1]} {friend[2]}")
+                if self.hasProfile(friend[0]):
+                    options[-1] = options[-1] + " (View Profile)"
                 ids.append(friend[0])
             options.append("Go Back")
 

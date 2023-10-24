@@ -1009,7 +1009,7 @@ def test_viewFriendEmptyProfile(monkeypatch, capsys):
   connections = [[1, defaultUser, defaultUser+"1", "confirmed"]]
   addRowsToTable(connections, "friendships")
 
-  prompts = iter([{0: 'For Existing Users'}, {0: 'Show my Network'}, {0: f'User ID: {defaultUser+"1"}, Name: {defaultFirstName} {defaultLastName} (View Profile)'}, {0: 'Log out'}, {0: 'Exit'}])
+  prompts = iter([{0: 'For Existing Users'}, {0: 'Show my Network'}, {0: f'User ID: {defaultUser+"1"}, Name: {defaultFirstName} {defaultLastName}'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword])
