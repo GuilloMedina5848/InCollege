@@ -49,10 +49,13 @@ DATABASE_HOST = "localhost"
 DATABASE_PORT = "5432"
 
 def dropTestDatabase():
-    with psycopg.connect(dbname=DATABASE_ORIGINAL, user=DATABASE_USER, password=DATABASE_PASSWORD, host=DATABASE_HOST, port=DATABASE_PORT) as connection:
-       connection._set_autocommit(True)
-       with connection.cursor() as cursor:
-          cursor.execute(f"""DROP DATABASE {DATABASE_TEST_NAME};""")
+    try:
+      with psycopg.connect(dbname=DATABASE_ORIGINAL, user=DATABASE_USER, password=DATABASE_PASSWORD, host=DATABASE_HOST, port=DATABASE_PORT) as connection:
+        connection._set_autocommit(True)
+        with connection.cursor() as cursor:
+            cursor.execute(f"""DROP DATABASE {DATABASE_TEST_NAME};""")
+    except:
+      pass
 
 def clear():
     with psycopg.connect(dbname=DATABASE_TEST_NAME, user=DATABASE_USER, password=DATABASE_PASSWORD, host=DATABASE_HOST, port=DATABASE_PORT) as connection:
@@ -74,6 +77,7 @@ def clear():
                     cursor.execute(f"DELETE FROM {table}")
                 except Exception as e:
                     print(f"Error deleting data from {table}: {e}")
+                    exit()
 
                 # If there's a sequence associated, reset it
                 if sequence:
@@ -81,6 +85,7 @@ def clear():
                         cursor.execute(f"ALTER SEQUENCE {sequence} RESTART WITH 1")
                     except Exception as e:
                         print(f"Error resetting sequence {sequence}: {e}")
+                        exit()
 
             # Commit all changes to the database
             connection.commit()
@@ -139,7 +144,10 @@ def addRowsToTable(rows, table):
             copy.write_row(row)
       except Exception as e:
           print(f"Error executing query: {e}")
+          exit()
 
+
+dropTestDatabase()
 helper.createDatabase(DATABASE_USER, DATABASE_PASSWORD, DATABASE_TEST_NAME, DATABASE_HOST, DATABASE_PORT)
 
 ###########
