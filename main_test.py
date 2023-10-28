@@ -35,7 +35,7 @@ defaultLocation = "pyTest"
 defaultSalary = "0"
 defaultJobTuple = (1, defaultUser, defaultTitle, defaultDescription, defaultEmployer, defaultLocation, defaultSalary, defaultFirstName, defaultLastName)
 defaultJobTable = [[defaultJobTuple]]
-maxJobs = 5
+maxJobs = 10
 
 tables = ["educations", "experiences", "profiles", "jobs", "friendships", "users"] # this needs to be in an order such that the tables with linked keys are deleted first
 
@@ -1016,6 +1016,64 @@ def test_viewFriendProfile(monkeypatch, capsys):
                     Major: {defaultMajor}
                     """
   assert output in capsys.readouterr().out
+
+############################################ Sprint 6 Tests ###################################################
+
+def test_deleteJob(monkeypatch, capsys):
+  addTestUser()
+  jobs = [defaultJobTuple]
+  addRowsToTable(jobs, 'jobs')
+
+  prompts = iter([{0: 'For Existing Users'}, {0: 'Job search/internship'}, {0: 'Delete a Job'}, {0: f"Job ID: 1, User ID: {defaultUser}, Title: {defaultTitle}, Description: {defaultDescription}, Employer: {defaultEmployer}, Location: {defaultLocation}, Salary: {defaultSalary}"}, {0: 'Back to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
+  monkeypatch.setattr(promptModule, lambda _: next(prompts))
+
+  inputs = iter([defaultUser, defaultPassword])
+  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+  InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
+
+  assert readDB('jobs') == [[]]
+
+def test_deleteJobEmpty(monkeypatch, capsys):
+  addTestUser()
+
+  prompts = iter([{0: 'For Existing Users'}, {0: 'Job search/internship'}, {0: 'Delete a Job'}, {0: 'Back to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
+  monkeypatch.setattr(promptModule, lambda _: next(prompts))
+
+  inputs = iter([defaultUser, defaultPassword])
+  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+  InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
+
+  assert "No active job postings found." in capsys.readouterr().out
+
+def test_searchJob(monkeypatch, capsys):
+  addTestUser()
+  jobs = [defaultJobTuple]
+  addRowsToTable(jobs, 'jobs')
+
+  prompts = iter([{0: 'For Existing Users'}, {0: 'Job search/internship'}, {0: 'Search for a Job'}, {0: f"Job ID: 1, Title: {defaultTitle}"}, {0: 'Back to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
+  monkeypatch.setattr(promptModule, lambda _: next(prompts))
+
+  inputs = iter([defaultUser, defaultPassword])
+  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+  InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
+
+  assert f"Job ID: 1 \nUser ID: {defaultUser} \nTitle: {defaultTitle}, \nDescription: {defaultDescription}, \nEmployer: {defaultEmployer}, \nLocation: {defaultLocation}, \nSalary: {defaultSalary}" in capsys.readouterr().out
+
+def test_searchJobEmpty(monkeypatch, capsys):
+  addTestUser()
+
+  prompts = iter([{0: 'For Existing Users'}, {0: 'Job search/internship'}, {0: 'Search for a Job'}, {0: 'Back to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
+  monkeypatch.setattr(promptModule, lambda _: next(prompts))
+
+  inputs = iter([defaultUser, defaultPassword])
+  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+  InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
+
+  assert "No active job postings found." in capsys.readouterr().out
 
 def test_dummy():
   dropTestDatabase()

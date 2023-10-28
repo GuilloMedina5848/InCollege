@@ -138,12 +138,12 @@ class InCollegeServer():
                         return
                     
                     else:
-                        fetch_query = """
+                        delete_query = """
                         DELETE FROM jobs   
                         WHERE job_id = %s;
                         """
                         id = options.index(choice[0])
-                        cursor.execute(fetch_query, (ids[id],) )
+                        cursor.execute(delete_query, (ids[id],) )
                         
                 else:
                     print("\nNo active job postings found.\n")
@@ -186,6 +186,9 @@ class InCollegeServer():
                         id = options.index(choice[0])
                         print(details[id])
                         print('\n=================================\n')
+
+                else:
+                    print("\nNo active job postings found.\n")
 
     def signIn(self):
         """
