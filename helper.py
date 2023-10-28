@@ -58,10 +58,24 @@ DATABASE_QUERY_STRING = """
                             degree VARCHAR(255),
                             year_started INT,
                             year_ended INT
-                        );"""
+                        );
+                        
+                        CREATE TABLE job_applications (
+                            application_id SERIAL PRIMARY KEY,
+                            user_id VARCHAR(255) REFERENCES users(user_id),
+                            job_id INT REFERENCES jobs(job_id) ON DELETE CASCADE,
+                            graduation_date DATE,
+                            start_date DATE,
+                            paragraph_text TEXT,
+                            UNIQUE (user_id, job_id)
+                        );
 
-MAX_USERS = 10
-MAX_JOBS = 5
+                        CREATE TABLE saved_jobs (
+                            user_id VARCHAR(255) REFERENCES users(user_id),
+                            job_id INT REFERENCES jobs(job_id) ON DELETE CASCADE,
+                            PRIMARY KEY (user_id, job_id)
+                        );
+                        """
 
 def createDatabase(databaseUser, databasePassword, databaseName, databaseHost, databasePort, databaseQueryString = DATABASE_QUERY_STRING):
     with psycopg.connect(user=databaseUser, password=databasePassword) as connection:
