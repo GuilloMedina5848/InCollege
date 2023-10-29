@@ -174,21 +174,39 @@ class InCollegeServer():
                         details.append(f"Job ID: {jobs[0]} \nUser ID: {jobs[1]} \nTitle: {jobs[2]}, \nDescription: {jobs[3]}, \nEmployer: {jobs[4]}, \nLocation: {jobs[5]}, \nSalary: {jobs[6]}")
                     options.append("Go Back")
                     
-                    choice = prompt({
-                            "type": "list",
-                            "message" : "List of Jobs:",
-                            "choices": options
-                        })
-                    
-                    if choice[0] == "Go Back":
-                        return
-                    else:
-                        id = options.index(choice[0])
-                        print(details[id])
-                        print('\n=================================\n')
+                    while True:
+                        choice = prompt({
+                                "type": "list",
+                                "message" : "List of Jobs:",
+                                "choices": options
+                            })
+                        
+                        if choice[0] == "Go Back":
+                            return
+                        else:
+                            id = options.index(choice[0])
+                            print(details[id])
+                            print('\n=================================\n')
+                            
+                            # After showing job details, offer options to save or apply
+                            job_id = active_jobs[id][0]
+                            sub_choice = prompt({
+                                "type": "list",
+                                "message": "Job Options:",
+                                "choices": ["Save/Unsave the Job", "Apply for the Job", "Go Back"]
+                            })
+
+                            if sub_choice[0] == "Save/Unsave the Job":
+                                self.saveJobToDatabase(job_id)
+                                print("Job saved successfully!")
+                            elif sub_choice[0] == "Apply for the Job":
+                                self.applyForJob(job_id)
+                            elif sub_choice[0] == "Go Back":
+                                continue
 
                 else:
                     print("\nNo active job postings found.\n")
+
 
     def signIn(self):
         """
@@ -864,50 +882,29 @@ class InCollegeServer():
         except ValueError:              
             print("Invalid choice. Please enter a valid option.")
 
-    def applyForJob(self):
-        # List all available jobs
-        jobs = self.listJobs()
-
-        if not jobs:
-            print("No jobs are currently available.")
-            return
-
-        print("\nAvailable Jobs:")
-        for i, job in enumerate(jobs):
-            print(f"{i + 1}. {job['title']}")
-
-        while True:
-            try:
-                job_choice = int(input("Enter the number of the job you want to apply for (or 0 to cancel): "))
-                if 0 <= job_choice <= len(jobs):
-                    break
-                else:
-                    print("Invalid choice. Please enter a valid job number.")
-            except ValueError:
-                print("Invalid input. Please enter a valid job number.")
-
-        if job_choice == 0:
-            print("Application canceled.")
-            return
-
-        selected_job = jobs[job_choice - 1]
-
+    def applyForJob(self, job_id):
         # Check if the user has already applied for this job
-        if self.hasAppliedForJob(selected_job['job_id']):
+        if self.hasAppliedForJob(job_id):
             print("You have already applied for this job. You cannot apply again.")
             return
-        if selected_job['user_id'] == self.userID:
-            print("You cannot apply for a job you have posted.")
-            return
-    
+        # Check if the user has posted this job
+        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT user_id FROM jobs WHERE job_id = %s", (job_id,))
+                job_user_id = cursor.fetchone()
+                if job_user_id and job_user_id[0] == self.userID:
+                    print("You cannot apply for a job you have posted.")
+                    return
+
         graduation_date = self.getDate()
         start_date = self.getDate()
         paragraph_text = input("Explain why you think you would be a good fit for this job: ")
 
         # Store the application in the database
-        self.storeJobApplication(selected_job['job_id'], graduation_date, start_date, paragraph_text)
+        self.storeJobApplication(job_id, graduation_date, start_date, paragraph_text)
 
         print("Application submitted successfully!")
+
 
     def listJobs(self):
         """
@@ -978,44 +975,6 @@ class InCollegeServer():
                 print(f"  Location: {job['location']}")
                 print(f"  Salary: {job['salary']}\n")
 
-    def saveJob(self):
-        # List all available jobs
-        jobs = self.listJobs()
-
-        if not jobs:
-            print("No jobs are currently available.")
-            return
-
-        print("\nAvailable Jobs:")
-        for i, job in enumerate(jobs):
-            print(f"{i + 1}. {job['title']}")
-
-        while True:
-            try:
-                job_choice = int(input("Enter the number of the job you want to save (or 0 to cancel): "))
-                if 0 <= job_choice <= len(jobs):
-                    break
-                else:
-                    print("Invalid choice. Please enter a valid job number.")
-            except ValueError:
-                print("Invalid input. Please enter a valid job number.")
-
-        if job_choice == 0:
-            print("Saving job canceled.")
-            return
-
-        selected_job = jobs[job_choice - 1]
-
-        # Check if the user has already saved this job
-        if self.hasSavedJob(selected_job['job_id']):
-            print("You have already saved this job.")
-            return
-
-        # Save the job
-        self.saveJobToDatabase(selected_job['job_id'])
-
-        print("Job saved successfully!")
-
     def hasSavedJob(self, job_id):
         """
         Check if the user has already saved a job.
@@ -1028,12 +987,23 @@ class InCollegeServer():
         """
         Save the job to the user's saved jobs list in the database.
         """
-        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+        if self.hasSavedJob(job_id):
+            print("Job successfully unsaved")
             with connection.cursor() as cursor:
+                # First, delete any existing saved job with the same job_id
                 cursor.execute(
-                    "INSERT INTO saved_jobs (user_id, job_id) VALUES (%s, %s)",
+                    "DELETE FROM saved_jobs WHERE user_id = %s AND job_id = %s",
                     (self.userID, job_id)
-             )
+                )
+        else:
+            print("Job successfully saved")
+            with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+                with connection.cursor() as cursor:
+                    cursor.execute(
+                        "INSERT INTO saved_jobs (user_id, job_id) VALUES (%s, %s)",
+                        (self.userID, job_id)
+                )
+                    
     def listSavedJobs(self):
         """
         Print a list of jobs that the user has saved.
@@ -1388,7 +1358,7 @@ class InCollegeServer():
                                 choice = prompt({
                                         "type": "list", 
                                         "message" : "Select one:",
-                                        "choices": ["Search for a Job", "Post a Job", "Delete a Job", "Apply for a Job" ,"Save a Job" , "List of Applied Jobs", "List not Applied Jobs" , "List of Saved Jobs", "Back to the main menu"]
+                                        "choices": ["Search for a Job", "Post a Job", "Delete a Job" , "List of Applied Jobs", "List not Applied Jobs" , "List of Saved Jobs", "Back to the main menu"]
                                 })
 
                                 match choice[0]:
@@ -1398,10 +1368,6 @@ class InCollegeServer():
                                         self.addJob()
                                     case "Delete a Job":
                                         self.deleteJob()
-                                    case "Apply for a Job":
-                                        self.applyForJob()
-                                    case "Save a Job":
-                                        self.saveJob()
                                     case "List of Applied Jobs":
                                         self.listAppliedJobs()
                                     case "List not Applied Jobs":
