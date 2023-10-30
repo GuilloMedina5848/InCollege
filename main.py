@@ -895,8 +895,9 @@ class InCollegeServer():
                 if job_user_id and job_user_id[0] == self.userID:
                     print("You cannot apply for a job you have posted.")
                     return
-
+        print("Graduation Date Information:")
         graduation_date = self.getDate()
+        print("Start Date Information:")
         start_date = self.getDate()
         paragraph_text = input("Explain why you think you would be a good fit for this job: ")
 
