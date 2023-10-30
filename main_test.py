@@ -1,4 +1,4 @@
-import main, pytest, psycopg, helper
+import main, pytest, psycopg, helper, datetime
 from main import DATABASE_NAME_, InCollegeServer
 
 # TODO: update comments to reflect change from .txt file to database
@@ -37,7 +37,19 @@ defaultJobTuple = (1, defaultUser, defaultTitle, defaultDescription, defaultEmpl
 defaultJobTable = [[defaultJobTuple]]
 maxJobs = 10
 
-tables = ["educations", "experiences", "profiles", "jobs", "friendships", "users"] # this needs to be in an order such that the tables with linked keys are deleted first
+defaultGraduationYear = 2030
+defaultGraduationMonth = 3
+defaultGraduationDay = 30
+defaultGraduationDate = f"{defaultGraduationYear}-{defaultGraduationMonth}-{defaultGraduationDay}"
+defaultGraduationDatetime = datetime.date(defaultGraduationYear, defaultGraduationMonth, defaultGraduationDay)
+defaultStartYear = 2031
+defaultStartMonth = 1
+defaultStartDay = 1
+defaultStartDate = f"{defaultStartYear}-{defaultStartMonth}-{defaultStartDay}"
+defaultStartDatetime = datetime.date(defaultStartYear, defaultStartMonth, defaultStartDay)
+defaultApplicationDescription = "compellingExplanation"
+
+tables = ["job_applications", "saved_jobs", "educations", "experiences", "profiles", "jobs", "friendships", "users"] # this needs to be in an order such that the tables with linked keys are deleted first
 
 DATABASE_TEST_NAME = "incollegetestdb"
 DATABASE_ORIGINAL = DATABASE_NAME_
@@ -1052,7 +1064,7 @@ def test_searchJob(monkeypatch, capsys):
   jobs = [defaultJobTuple]
   addRowsToTable(jobs, 'jobs')
 
-  prompts = iter([{0: 'For Existing Users'}, {0: 'Job search/internship'}, {0: 'Search for a Job'}, {0: f"Job ID: 1, Title: {defaultTitle}"}, {0: 'Back to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
+  prompts = iter([{0: 'For Existing Users'}, {0: 'Job search/internship'}, {0: 'Search for a Job'}, {0: f"Job ID: 1, Title: {defaultTitle}"}, {0: 'Go Back'}, {0: 'Go Back'}, {0: 'Back to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword])
@@ -1074,6 +1086,105 @@ def test_searchJobEmpty(monkeypatch, capsys):
   InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
 
   assert "No active job postings found." in capsys.readouterr().out
+
+def test_saveJob(monkeypatch, capsys):
+  addTestUser()
+  jobs = [defaultJobTuple]
+  addRowsToTable(jobs, 'jobs')
+
+  prompts = iter([{0: 'For Existing Users'}, {0: 'Job search/internship'}, {0: 'Search for a Job'}, {0: f"Job ID: 1, Title: {defaultTitle}"}, {0: 'Save/Unsave the Job'}, {0: 'Go Back'}, {0: 'Back to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
+  monkeypatch.setattr(promptModule, lambda _: next(prompts))
+
+  inputs = iter([defaultUser, defaultPassword])
+  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+  InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
+
+  assert "Job successfully saved" in capsys.readouterr().out
+  assert readDB('saved_jobs')[0][0] == (defaultUser, 1)
+
+def test_unsaveJob(monkeypatch, capsys):
+  addTestUser()
+  jobs = [defaultJobTuple]
+  addRowsToTable(jobs, 'jobs')
+  saved_jobs = [(defaultUser, 1)]
+  addRowsToTable(saved_jobs, 'saved_jobs')
+
+  prompts = iter([{0: 'For Existing Users'}, {0: 'Job search/internship'}, {0: 'Search for a Job'}, {0: f"Job ID: 1, Title: {defaultTitle}"}, {0: 'Save/Unsave the Job'}, {0: 'Go Back'}, {0: 'Back to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
+  monkeypatch.setattr(promptModule, lambda _: next(prompts))
+
+  inputs = iter([defaultUser, defaultPassword])
+  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+  InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
+
+  assert "Job successfully unsaved" in capsys.readouterr().out
+  assert readDB('saved_jobs') == [[]]
+
+def test_applyToJob(monkeypatch, capsys):
+  addTestUser(2)
+  jobPost = list(defaultJobTuple)
+  jobPost[1] = defaultUser+'1'
+  jobs = [jobPost]
+  addRowsToTable(jobs, 'jobs')
+
+  prompts = iter([{0: 'For Existing Users'}, {0: 'Job search/internship'}, {0: 'Search for a Job'}, {0: f"Job ID: 1, Title: {defaultTitle}"}, {0: 'Apply for the Job'}, {0: 'Go Back'}, {0: 'Back to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
+  monkeypatch.setattr(promptModule, lambda _: next(prompts))
+
+  inputs = iter([defaultUser, defaultPassword, defaultApplicationDescription])
+  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+  dates = iter([defaultGraduationDate, defaultStartDate])
+  monkeypatch.setattr('helper.getDate', lambda: next(dates))
+
+  InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
+
+  assert "Application submitted successfully!" in capsys.readouterr().out
+  assert readDB('job_applications')[0][0] == (1, defaultUser, 1, defaultGraduationDatetime, defaultStartDatetime, defaultApplicationDescription)
+
+def test_applyToAppliedJob(monkeypatch, capsys):
+  addTestUser()
+  jobs = [defaultJobTuple]
+  addRowsToTable(jobs, 'jobs')
+  applications = [(1, defaultUser, 1, defaultGraduationDatetime, defaultStartDatetime, defaultApplicationDescription)]
+  addRowsToTable(applications, 'job_applications')
+
+  prompts = iter([{0: 'For Existing Users'}, {0: 'Job search/internship'}, {0: 'Search for a Job'}, {0: f"Job ID: 1, Title: {defaultTitle} (Applied to)"}, {0: 'Apply for the Job'}, {0: 'Go Back'}, {0: 'Back to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
+  monkeypatch.setattr(promptModule, lambda _: next(prompts))
+
+  inputs = iter([defaultUser, defaultPassword, defaultApplicationDescription])
+  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+  dates = iter([defaultGraduationDate, defaultStartDate])
+  monkeypatch.setattr('helper.getDate', lambda: next(dates))
+
+  InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
+
+  assert "You have already applied for this job. You cannot apply again." in capsys.readouterr().out
+
+def test_applyToOwnJob(monkeypatch, capsys):
+  addTestUser()
+  jobs = [defaultJobTuple]
+  addRowsToTable(jobs, 'jobs')
+
+  prompts = iter([{0: 'For Existing Users'}, {0: 'Job search/internship'}, {0: 'Search for a Job'}, {0: f"Job ID: 1, Title: {defaultTitle}"}, {0: 'Apply for the Job'}, {0: 'Go Back'}, {0: 'Back to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
+  monkeypatch.setattr(promptModule, lambda _: next(prompts))
+
+  inputs = iter([defaultUser, defaultPassword])
+  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+  InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
+
+  assert "You cannot apply for a job you have posted." in capsys.readouterr().out
+
+def test_listAppliedJobs(monkeypatch, capsys):
+  assert False
+
+def test_listUnappliedJobs(monkeypatch, capsys):
+  assert False
+
+def test_listSavedJobs(monkeypatch, capsys):
+  assert False
 
 def test_dummy():
   dropTestDatabase()
