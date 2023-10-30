@@ -170,7 +170,10 @@ class InCollegeServer():
                     print("\nActive Job Postings \n")
 
                     for jobs in active_jobs:
-                        options.append(f"Job ID: {jobs[0]}, Title: {jobs[2]}")
+                        temp = f"Job ID: {jobs[0]}, Title: {jobs[2]}"
+                        if self.hasAppliedForJob(jobs[0]):
+                            temp = temp + " (Applied to)"
+                        options.append(temp)
                         details.append(f"Job ID: {jobs[0]} \nUser ID: {jobs[1]} \nTitle: {jobs[2]}, \nDescription: {jobs[3]}, \nEmployer: {jobs[4]}, \nLocation: {jobs[5]}, \nSalary: {jobs[6]}")
                     options.append("Go Back")
                     
@@ -205,7 +208,6 @@ class InCollegeServer():
 
                 else:
                     print("\nNo active job postings found.\n")
-
 
     def signIn(self):
         """
@@ -905,7 +907,6 @@ class InCollegeServer():
 
         print("Application submitted successfully!")
 
-
     def listJobs(self):
         """
         Retrieve a list of all available jobs.
@@ -935,6 +936,7 @@ class InCollegeServer():
                     "INSERT INTO job_applications (user_id, job_id, graduation_date, start_date, paragraph_text) VALUES (%s, %s, %s, %s, %s)",
                     (self.userID, job_id, graduation_date, start_date, paragraph_text)
                 )
+
     def listAppliedJobs(self):
         """
         Print a list of jobs that the user has applied for.
@@ -983,6 +985,7 @@ class InCollegeServer():
             with connection.cursor() as cursor:
                 cursor.execute("SELECT * FROM saved_jobs WHERE user_id = %s AND job_id = %s", (self.userID, job_id))
                 return cursor.fetchone() is not None
+
     def saveJobToDatabase(self, job_id):
         """
         Save the job to the user's saved jobs list in the database.
