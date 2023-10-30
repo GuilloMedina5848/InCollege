@@ -198,7 +198,6 @@ class InCollegeServer():
 
                             if sub_choice[0] == "Save/Unsave the Job":
                                 self.saveJobToDatabase(job_id)
-                                print("Job saved successfully!")
                             elif sub_choice[0] == "Apply for the Job":
                                 self.applyForJob(job_id)
                             elif sub_choice[0] == "Go Back":
@@ -990,12 +989,13 @@ class InCollegeServer():
         """
         if self.hasSavedJob(job_id):
             print("Job successfully unsaved")
-            with connection.cursor() as cursor:
-                # First, delete any existing saved job with the same job_id
-                cursor.execute(
-                    "DELETE FROM saved_jobs WHERE user_id = %s AND job_id = %s",
-                    (self.userID, job_id)
-                )
+            with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+                with connection.cursor() as cursor:
+                    # First, delete any existing saved job with the same job_id
+                    cursor.execute(
+                        "DELETE FROM saved_jobs WHERE user_id = %s AND job_id = %s",
+                        (self.userID, job_id)
+                    )
         else:
             print("Job successfully saved")
             with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
