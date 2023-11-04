@@ -1,5 +1,5 @@
-py -m pytest main_test.py 
-py main.py
+To run the test: py -m pytest main_test.py 
+To run the code: py main.py
 
 incollegedb.backup is the backup database file created using 'pg_dump'
 How to restore the database in your local machine:
