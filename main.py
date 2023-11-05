@@ -26,7 +26,7 @@ class InCollegeServer():
     has_ad = True
     language = "English"
 
-    maxJobs = 10
+    maxJobs = 5
     maxUsers = 10
 
     def validUser(self, UserID, password):
@@ -102,112 +102,6 @@ class InCollegeServer():
                 cursor.execute(insert_query, (title, description, employer, location, salary, self.userID, self.first_name, self.last_name))
 
         print("\nJob posted successfully!")
-    
-    def deleteJob(self):
-        # Connect to the database
-        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
-            
-            print("\n============================\n")
-
-            with connection.cursor() as cursor:
-                fetch_query = """
-                    SELECT job_id, user_id, title, description, employer, location, salary 
-                    FROM jobs 
-                    WHERE user_id = %s;
-                    """
-                cursor.execute(fetch_query, (self.userID,))
-                active_jobs = cursor.fetchall()
-
-                options = []
-                ids = []
-
-                if active_jobs:
-                    print("\n List of Active Job Postings by The User \n")
-                    for jobs in active_jobs:
-                        options.append(f"Job ID: {jobs[0]}, User ID: {jobs[1]}, Title: {jobs[2]}, Description: {jobs[3]}, Employer: {jobs[4]}, Location: {jobs[5]}, Salary: {jobs[6]}")
-                        ids.append(jobs[0])
-                    options.append("Go Back")
-                    
-                    choice = prompt({
-                            "type": "list",
-                            "message" : "List of Jobs:",
-                            "choices": options
-                        })
-            
-                    if choice[0] == "Go Back":
-                        return
-                    
-                    else:
-                        delete_query = """
-                        DELETE FROM jobs   
-                        WHERE job_id = %s;
-                        """
-                        id = options.index(choice[0])
-                        cursor.execute(delete_query, (ids[id],) )
-                        
-                else:
-                    print("\nNo active job postings found.\n")
-    
-    def searchforAJob(self):
-        # Connect to the database
-        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
-            
-            print("\n============================\n")
-
-            with connection.cursor() as cursor:
-                fetch_query = """
-                    SELECT job_id, user_id, title, description, employer, location, salary 
-                    FROM jobs;
-                    """
-                cursor.execute(fetch_query)
-                active_jobs = cursor.fetchall()
-
-                options = []
-                
-                details = []
-                
-                if active_jobs: 
-                    print("\nActive Job Postings \n")
-
-                    for jobs in active_jobs:
-                        temp = f"Job ID: {jobs[0]}, Title: {jobs[2]}"
-                        if self.hasAppliedForJob(jobs[0]):
-                            temp = temp + " (Applied to)"
-                        options.append(temp)
-                        details.append(f"Job ID: {jobs[0]} \nUser ID: {jobs[1]} \nTitle: {jobs[2]}, \nDescription: {jobs[3]}, \nEmployer: {jobs[4]}, \nLocation: {jobs[5]}, \nSalary: {jobs[6]}")
-                    options.append("Go Back")
-                    
-                    while True:
-                        choice = prompt({
-                                "type": "list",
-                                "message" : "List of Jobs:",
-                                "choices": options
-                            })
-                        
-                        if choice[0] == "Go Back":
-                            return
-                        else:
-                            id = options.index(choice[0])
-                            print(details[id])
-                            print('\n=================================\n')
-                            
-                            # After showing job details, offer options to save or apply
-                            job_id = active_jobs[id][0]
-                            sub_choice = prompt({
-                                "type": "list",
-                                "message": "Job Options:",
-                                "choices": ["Save/Unsave the Job", "Apply for the Job", "Go Back"]
-                            })
-
-                            if sub_choice[0] == "Save/Unsave the Job":
-                                self.saveJobToDatabase(job_id)
-                            elif sub_choice[0] == "Apply for the Job":
-                                self.applyForJob(job_id)
-                            elif sub_choice[0] == "Go Back":
-                                continue
-
-                else:
-                    print("\nNo active job postings found.\n")
 
     def signIn(self):
         """
@@ -455,6 +349,42 @@ class InCollegeServer():
 
             except ValueError:
                 print("Invalid choice, please try again.\n")
+
+    def getDate(self):
+        while True:
+            year = input('Enter year: ')
+            if year.isnumeric():
+                year = int(year)
+                if year <= 9999 and year >= 1:
+                    break
+            print('Invalid input. Please input a valid year.')
+
+        while True:
+            month = input('Enter month: ')
+            if month.isnumeric():
+                month = int(month)
+                if month <= 12 and month >= 1:
+                    break
+            print('Invalid input. Please input a valid month.')
+        
+        if month == 2:
+            if year % 4 == 0 and (year % 100 != 0 or year % 400 == 0):
+                max = 29
+            else:
+                max = 28
+        elif month in (1, 3, 5, 7, 8, 10, 12):
+            max = 31
+        else: max = 30
+
+        while True:
+            day = input('Enter day: ')
+            if day.isnumeric():
+                day = int(day)
+                if day <= max and day >= 1:
+                    break
+            print('Invalid input. Please input a valid day.')
+        
+        return f"{year}-{month}-{day}"
 
     def completeRow(self, table, crit = []):
         with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
@@ -788,7 +718,7 @@ class InCollegeServer():
             
             else:
                 if choice[0] == "Date Started" or choice[0] == "Date Ended":
-                    entry = helper.getDate()
+                    entry = self.getDate()
                 else:
                     entry = input(f"Change {choice[0]} to what? ")
                 # add logic to verify/change input based on selection
@@ -870,156 +800,6 @@ class InCollegeServer():
             
         except ValueError:              
             print("Invalid choice. Please enter a valid option.")
-
-    def applyForJob(self, job_id):
-        # Check if the user has already applied for this job
-        if self.hasAppliedForJob(job_id):
-            print("You have already applied for this job. You cannot apply again.")
-            return
-        # Check if the user has posted this job
-        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
-            with connection.cursor() as cursor:
-                cursor.execute("SELECT user_id FROM jobs WHERE job_id = %s", (job_id,))
-                job_user_id = cursor.fetchone()
-                if job_user_id and job_user_id[0] == self.userID:
-                    print("You cannot apply for a job you have posted.")
-                    return
-        print("Graduation Date Information:")
-        graduation_date = helper.getDate()
-        print("Start Date Information:")
-        start_date = helper.getDate()
-        paragraph_text = input("Explain why you think you would be a good fit for this job: ")
-
-        # Store the application in the database
-        self.storeJobApplication(job_id, graduation_date, start_date, paragraph_text)
-
-        print("Application submitted successfully!")
-
-    def listJobs(self):
-        """
-        Retrieve a list of all available jobs.
-        """
-        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
-            with connection.cursor(row_factory=dict_row) as cursor:
-                cursor.execute("SELECT * FROM jobs")
-                jobs = cursor.fetchall()
-        return jobs
-
-    def hasAppliedForJob(self, job_id):
-        """
-        Check if the user has already applied for a job.
-        """
-        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
-            with connection.cursor() as cursor:
-                cursor.execute("SELECT * FROM job_applications WHERE user_id = %s AND job_id = %s", (self.userID, job_id))
-                return cursor.fetchone() is not None
-
-    def storeJobApplication(self, job_id, graduation_date, start_date, paragraph_text):
-        """
-        Store the job application in the database.
-        """
-        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
-            with connection.cursor() as cursor:
-                cursor.execute(
-                    "INSERT INTO job_applications (user_id, job_id, graduation_date, start_date, paragraph_text) VALUES (%s, %s, %s, %s, %s)",
-                    (self.userID, job_id, graduation_date, start_date, paragraph_text)
-                )
-
-    def listAppliedJobs(self):
-        """
-        Print a list of jobs that the user has applied for.
-        """
-        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
-            with connection.cursor(row_factory=dict_row) as cursor:
-                cursor.execute("SELECT jobs.* FROM jobs INNER JOIN job_applications ON jobs.job_id = job_applications.job_id WHERE job_applications.user_id = %s", (self.userID,))
-                applied_jobs = cursor.fetchall()
-        
-        if not applied_jobs:
-            print("You haven't applied for any jobs yet.")
-        else:
-            print("\nJobs Applied For:")
-            for job in applied_jobs:
-                print(f"- Title: {job['title']}")
-                print(f"  Description: {job['description']}")
-                print(f"  Employer: {job['employer']}")
-                print(f"  Location: {job['location']}")
-                print(f"  Salary: {job['salary']}\n")
-
-    def listUnappliedJobs(self):
-        """
-        Print a list of jobs that the user has not yet applied for.
-        """
-        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
-            with connection.cursor(row_factory=dict_row) as cursor:
-                cursor.execute("SELECT * FROM jobs WHERE job_id NOT IN (SELECT job_id FROM job_applications WHERE user_id = %s)", (self.userID,))
-                unapplied_jobs = cursor.fetchall()
-        
-        if not unapplied_jobs:
-            print("You've applied for all available jobs.")
-        else:
-            print("\nJobs Not Yet Applied For:")
-            for job in unapplied_jobs:
-                print(f"- Title: {job['title']}")
-                print(f"  Description: {job['description']}")
-                print(f"  Employer: {job['employer']}")
-                print(f"  Location: {job['location']}")
-                print(f"  Salary: {job['salary']}\n")
-
-    def hasSavedJob(self, job_id):
-        """
-        Check if the user has already saved a job.
-        """
-        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
-            with connection.cursor() as cursor:
-                cursor.execute("SELECT * FROM saved_jobs WHERE user_id = %s AND job_id = %s", (self.userID, job_id))
-                return cursor.fetchone() is not None
-
-    def saveJobToDatabase(self, job_id):
-        """
-        Save the job to the user's saved jobs list in the database.
-        """
-        if self.hasSavedJob(job_id):
-            print("Job successfully unsaved")
-            with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
-                with connection.cursor() as cursor:
-                    # First, delete any existing saved job with the same job_id
-                    cursor.execute(
-                        "DELETE FROM saved_jobs WHERE user_id = %s AND job_id = %s",
-                        (self.userID, job_id)
-                    )
-        else:
-            print("Job successfully saved")
-            with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
-                with connection.cursor() as cursor:
-                    cursor.execute(
-                        "INSERT INTO saved_jobs (user_id, job_id) VALUES (%s, %s)",
-                        (self.userID, job_id)
-                )
-                    
-    def listSavedJobs(self):
-        """
-        Print a list of jobs that the user has saved.
-        """
-        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
-            with connection.cursor(row_factory=dict_row) as cursor:
-                cursor.execute("""
-                    SELECT jobs.* 
-                    FROM jobs
-                    INNER JOIN saved_jobs ON jobs.job_id = saved_jobs.job_id
-                    WHERE saved_jobs.user_id = %s
-                """, (self.userID,))
-                saved_jobs = cursor.fetchall()
-
-        if not saved_jobs:
-            print("You haven't saved any jobs yet.")
-        else:
-            print("\nSaved Jobs:")
-            for job in saved_jobs:
-                print(f"- Title: {job['title']}")
-                print(f"  Description: {job['description']}")
-                print(f"  Employer: {job['employer']}")
-                print(f"  Location: {job['location']}")
-                print(f"  Salary: {job['salary']}\n")
 
     def editEducation(self):
         while True:
@@ -1339,6 +1119,7 @@ class InCollegeServer():
                                             "View Pending Connection Requests",
                                             "Show my Network",
                                             "Disconnect from a Connection",
+                                            "Inbox",
                                             "Send message",
                                             "Log out"]
                 })
@@ -1354,22 +1135,14 @@ class InCollegeServer():
                                 choice = prompt({
                                         "type": "list", 
                                         "message" : "Select one:",
-                                        "choices": ["Search for a Job", "Post a Job", "Delete a Job" , "List of Applied Jobs", "List not Applied Jobs" , "List of Saved Jobs", "Back to the main menu"]
+                                        "choices": ["Search for a Job", "Post a Job", "Back to the main menu"]
                                 })
 
                                 match choice[0]:
                                     case "Search for a Job":
-                                        self.searchforAJob()
+                                        print("\nunder construction.\n")
                                     case "Post a Job":
                                         self.addJob()
-                                    case "Delete a Job":
-                                        self.deleteJob()
-                                    case "List of Applied Jobs":
-                                        self.listAppliedJobs()
-                                    case "List not Applied Jobs":
-                                        self.listUnappliedJobs()
-                                    case "List of Saved Jobs":
-                                        self.listSavedJobs()
                                     case "Back to the main menu":
                                         break  
                                     case __:    # <--- Else
@@ -1419,6 +1192,8 @@ class InCollegeServer():
                         self.viewConnectedFriends()
                     case "Disconnect from a Connection":
                         self.disconnectFriend()
+                    case "Inbox":
+                        self.displayInbox()
                     case "Send message":
                         self.MessageMenu()
                     case "Log out":
@@ -1839,6 +1614,172 @@ class InCollegeServer():
 
         if messages:
             print(f"\nYou have {len(messages)} pending messages in your inbox!")
+
+    def displayInbox(self):
+        page = 1
+        messages_per_page = 10
+
+        while True:
+            with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+                with connection.cursor() as cursor:
+                    # Fetch all messages for the current user
+                    fetch_query = """
+                    SELECT message_id, sender, message_txt 
+                    FROM messages 
+                    WHERE receiver = %s
+                    ORDER BY message_id;
+                    """
+                    cursor.execute(fetch_query, (self.userID,))
+                    messages = cursor.fetchall()
+
+            if not messages:
+                print("\nNo messages in your inbox.")
+                return
+
+            start_idx = (page - 1) * messages_per_page
+            end_idx = start_idx + messages_per_page
+
+            # Filter the messages to be displayed on the current page
+            messages_to_display = messages[start_idx:end_idx]
+
+            print("\nMessages:")
+            for message in messages_to_display:
+                message_id, sender_id, message_txt = message
+                sender_name = self.getUserName(sender_id)
+                print(f"\nMessage ID: {message_id}")
+                print(f"From: {sender_name}")
+                print(f"Message: {message_txt}")
+
+            while True:
+                print("\nOptions:")
+                print("1. Delete message")
+                print("2. Read message")
+                print("3. Respond to message")
+                print("4. Next messages")
+                print("5. Previous messages")
+                print("6. Exit")
+                choice = input("Enter your choice: ")
+
+                if choice == '1':
+                    # Delete the message
+                    message_id = input("Enter the Message ID to delete: ")
+                    self.deleteMessage(message_id)
+                    break
+                elif choice == '2':
+                    # Read the message
+                    message_id = input("Enter the Message ID to read: ")
+                    self.readMessage(message_id)
+                    break
+                elif choice == '3':
+                    # Respond to the message
+                    message_id = input("Enter the Message ID to respond: ")
+                    receiver_id = self.getSenderID(message_id)
+                    self.respondToMessage(receiver_id)
+                    break
+                elif choice == '4':
+                    page += 1
+                    break
+                elif choice == '5':
+                    page -= 1
+                    break
+                elif choice == '6':
+                    return
+                else:
+                    print("Invalid choice. Please enter a valid option.")
+
+
+
+    def getSenderID(self, message_id):
+        # Retrieve the receiver ID of a message
+        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+            with connection.cursor() as cursor:
+                fetch_query = """
+                SELECT sender 
+                FROM messages 
+                WHERE message_id = %s;
+                """
+                cursor.execute(fetch_query, (message_id,))
+                receiver_id = cursor.fetchone()
+                return receiver_id[0] if receiver_id else None
+
+    def deleteMessage(self, message_id):
+        # Mark the message as deleted
+        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+            with connection.cursor() as cursor:
+                delete_query = """
+                DELETE FROM messages 
+                WHERE message_id = %s;
+                """
+                cursor.execute(delete_query, (message_id,))
+        print("Message deleted.")
+
+
+    def respondToMessage(self, receiver_id):
+        message = input("Enter your response: ")
+        
+        # Insert the response message into the table
+        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+            with connection.cursor() as cursor:
+                insert_query = """
+                INSERT INTO messages (sender, receiver, message_txt, status) 
+                VALUES (%s, %s, %s, 'unread');
+                """
+                cursor.execute(insert_query, (self.userID, receiver_id, message))
+        print("Response message sent.")
+
+
+    def readMessage(self, message_id):
+        # Read a specific message and update its status
+        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD,
+                            host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+            with connection.cursor() as cursor:
+                fetch_query = """
+                SELECT sender, message_txt
+                FROM messages
+                WHERE message_id = %s AND receiver = %s;
+                """
+                cursor.execute(fetch_query, (message_id, self.userID))
+                message = cursor.fetchone()
+
+        if message:
+            sender_id, message_text = message
+            sender_name = self.getUserName(sender_id)
+            print(f"Message from: {sender_name}")
+            print(f"Message: {message_text}")
+
+            # Update the message status to 'read'
+            with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD,
+                                host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+                with connection.cursor() as cursor:
+                    update_query = """
+                    UPDATE messages
+                    SET status = 'read'
+                    WHERE message_id = %s;
+                    """
+                    cursor.execute(update_query, (message_id,))
+                    connection.commit()
+        else:
+            print("Message not found in your inbox.")
+
+    def getUserName(self, user_id):
+        # Get the name of a user based on their user ID
+        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD,
+                            host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+            with connection.cursor() as cursor:
+                fetch_query = """
+                SELECT first_name, last_name
+                FROM users
+                WHERE user_id = %s;
+                """
+                cursor.execute(fetch_query, (user_id,))
+                user = cursor.fetchone()
+
+        if user:
+            first_name, last_name = user
+            return f"{first_name} {last_name}"
+        else:
+            return "Unknown User"
+
 
     def __init__(self, databaseName = DATABASE_NAME_, databaseUser = DATABASE_USER_, databasePassword = DATABASE_PASSWORD_, databaseHost = DATABASE_HOST_, databasePort = DATABASE_PORT_):
         self.DATABASE_NAME = databaseName
