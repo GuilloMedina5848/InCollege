@@ -11,7 +11,8 @@ DATABASE_QUERY_STRING = """
                             has_ad BOOLEAN DEFAULT TRUE,
                             language VARCHAR(255) DEFAULT 'English',
                             university VARCHAR(255),
-                            major VARCHAR(255)
+                            major VARCHAR(255),
+                            tier VARCHAR(255) DEFAULT 'Standard'
                         );
 
                         CREATE TABLE jobs (
@@ -59,7 +60,7 @@ DATABASE_QUERY_STRING = """
                             year_started INT,
                             year_ended INT
                         );
-                        
+
                         CREATE TABLE job_applications (
                             application_id SERIAL PRIMARY KEY,
                             user_id VARCHAR(255) REFERENCES users(user_id),
@@ -68,6 +69,14 @@ DATABASE_QUERY_STRING = """
                             start_date DATE,
                             paragraph_text TEXT,
                             UNIQUE (user_id, job_id)
+                        );
+
+                        CREATE TABLE messages (
+                            message_id SERIAL PRIMARY KEY,
+                            sender VARCHAR(255) REFERENCES users(user_id),
+                            receiver VARCHAR(255) REFERENCES users(user_id),
+                            message_txt TEXT,
+                            status TEXT CHECK (status IN ('unread', 'read'))
                         );
 
                         CREATE TABLE saved_jobs (
