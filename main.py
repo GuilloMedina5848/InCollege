@@ -209,6 +209,7 @@ class InCollegeServer():
                 else:
                     print("\nNo active job postings found.\n")
 
+
     def signIn(self):
         """
         allow existing user to log in
@@ -933,7 +934,7 @@ class InCollegeServer():
             with connection.cursor(row_factory=dict_row) as cursor:
                 cursor.execute("SELECT jobs.* FROM jobs INNER JOIN job_applications ON jobs.job_id = job_applications.job_id WHERE job_applications.user_id = %s", (self.userID,))
                 applied_jobs = cursor.fetchall()
-        
+
         if not applied_jobs:
             print("You haven't applied for any jobs yet.")
         else:
@@ -953,7 +954,7 @@ class InCollegeServer():
             with connection.cursor(row_factory=dict_row) as cursor:
                 cursor.execute("SELECT * FROM jobs WHERE job_id NOT IN (SELECT job_id FROM job_applications WHERE user_id = %s)", (self.userID,))
                 unapplied_jobs = cursor.fetchall()
-        
+
         if not unapplied_jobs:
             print("You've applied for all available jobs.")
         else:
@@ -995,7 +996,7 @@ class InCollegeServer():
                         "INSERT INTO saved_jobs (user_id, job_id) VALUES (%s, %s)",
                         (self.userID, job_id)
                 )
-                    
+
     def listSavedJobs(self):
         """
         Print a list of jobs that the user has saved.
@@ -1339,6 +1340,7 @@ class InCollegeServer():
                                             "View Pending Connection Requests",
                                             "Show my Network",
                                             "Disconnect from a Connection",
+                                            "Inbox",
                                             "Send message",
                                             "Log out"]
                 })
@@ -1419,6 +1421,8 @@ class InCollegeServer():
                         self.viewConnectedFriends()
                     case "Disconnect from a Connection":
                         self.disconnectFriend()
+                    case "Inbox":
+                        self.displayInbox()
                     case "Send message":
                         self.MessageMenu()
                     case "Log out":
@@ -1839,6 +1843,172 @@ class InCollegeServer():
 
         if messages:
             print(f"\nYou have {len(messages)} pending messages in your inbox!")
+
+    def displayInbox(self):
+        page = 1
+        messages_per_page = 10
+
+        while True:
+            with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+                with connection.cursor() as cursor:
+                    # Fetch all messages for the current user
+                    fetch_query = """
+                    SELECT message_id, sender, message_txt 
+                    FROM messages 
+                    WHERE receiver = %s
+                    ORDER BY message_id;
+                    """
+                    cursor.execute(fetch_query, (self.userID,))
+                    messages = cursor.fetchall()
+
+            if not messages:
+                print("\nNo messages in your inbox.")
+                return
+
+            start_idx = (page - 1) * messages_per_page
+            end_idx = start_idx + messages_per_page
+
+            # Filter the messages to be displayed on the current page
+            messages_to_display = messages[start_idx:end_idx]
+
+            print("\nMessages:")
+            for message in messages_to_display:
+                message_id, sender_id, message_txt = message
+                sender_name = self.getUserName(sender_id)
+                print(f"\nMessage ID: {message_id}")
+                print(f"From: {sender_name}")
+                print(f"Message: {message_txt}")
+
+            while True:
+                print("\nOptions:")
+                print("1. Delete message")
+                print("2. Read message")
+                print("3. Respond to message")
+                print("4. Next messages")
+                print("5. Previous messages")
+                print("6. Exit")
+                choice = input("Enter your choice: ")
+
+                if choice == '1':
+                    # Delete the message
+                    message_id = input("Enter the Message ID to delete: ")
+                    self.deleteMessage(message_id)
+                    break
+                elif choice == '2':
+                    # Read the message
+                    message_id = input("Enter the Message ID to read: ")
+                    self.readMessage(message_id)
+                    break
+                elif choice == '3':
+                    # Respond to the message
+                    message_id = input("Enter the Message ID to respond: ")
+                    receiver_id = self.getSenderID(message_id)
+                    self.respondToMessage(receiver_id)
+                    break
+                elif choice == '4':
+                    page += 1
+                    break
+                elif choice == '5':
+                    page -= 1
+                    break
+                elif choice == '6':
+                    return
+                else:
+                    print("Invalid choice. Please enter a valid option.")
+
+
+
+    def getSenderID(self, message_id):
+        # Retrieve the receiver ID of a message
+        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+            with connection.cursor() as cursor:
+                fetch_query = """
+                SELECT sender 
+                FROM messages 
+                WHERE message_id = %s;
+                """
+                cursor.execute(fetch_query, (message_id,))
+                receiver_id = cursor.fetchone()
+                return receiver_id[0] if receiver_id else None
+
+    def deleteMessage(self, message_id):
+        # Mark the message as deleted
+        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+            with connection.cursor() as cursor:
+                delete_query = """
+                DELETE FROM messages 
+                WHERE message_id = %s;
+                """
+                cursor.execute(delete_query, (message_id,))
+        print("Message deleted.")
+
+
+    def respondToMessage(self, receiver_id):
+        message = input("Enter your response: ")
+        
+        # Insert the response message into the table
+        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+            with connection.cursor() as cursor:
+                insert_query = """
+                INSERT INTO messages (sender, receiver, message_txt, status) 
+                VALUES (%s, %s, %s, 'unread');
+                """
+                cursor.execute(insert_query, (self.userID, receiver_id, message))
+        print("Response message sent.")
+
+
+    def readMessage(self, message_id):
+        # Read a specific message and update its status
+        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD,
+                            host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+            with connection.cursor() as cursor:
+                fetch_query = """
+                SELECT sender, message_txt
+                FROM messages
+                WHERE message_id = %s AND receiver = %s;
+                """
+                cursor.execute(fetch_query, (message_id, self.userID))
+                message = cursor.fetchone()
+
+        if message:
+            sender_id, message_text = message
+            sender_name = self.getUserName(sender_id)
+            print(f"Message from: {sender_name}")
+            print(f"Message: {message_text}")
+
+            # Update the message status to 'read'
+            with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD,
+                                host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+                with connection.cursor() as cursor:
+                    update_query = """
+                    UPDATE messages
+                    SET status = 'read'
+                    WHERE message_id = %s;
+                    """
+                    cursor.execute(update_query, (message_id,))
+                    connection.commit()
+        else:
+            print("Message not found in your inbox.")
+
+    def getUserName(self, user_id):
+        # Get the name of a user based on their user ID
+        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD,
+                            host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+            with connection.cursor() as cursor:
+                fetch_query = """
+                SELECT first_name, last_name
+                FROM users
+                WHERE user_id = %s;
+                """
+                cursor.execute(fetch_query, (user_id,))
+                user = cursor.fetchone()
+
+        if user:
+            first_name, last_name = user
+            return f"{first_name} {last_name}"
+        else:
+            return "Unknown User"
+
 
     def __init__(self, databaseName = DATABASE_NAME_, databaseUser = DATABASE_USER_, databasePassword = DATABASE_PASSWORD_, databaseHost = DATABASE_HOST_, databasePort = DATABASE_PORT_):
         self.DATABASE_NAME = databaseName
