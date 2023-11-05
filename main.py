@@ -26,7 +26,7 @@ class InCollegeServer():
     has_ad = True
     language = "English"
 
-    maxJobs = 5
+    maxJobs = 10
     maxUsers = 10
 
     def validUser(self, UserID, password):
@@ -102,6 +102,113 @@ class InCollegeServer():
                 cursor.execute(insert_query, (title, description, employer, location, salary, self.userID, self.first_name, self.last_name))
 
         print("\nJob posted successfully!")
+    
+    def deleteJob(self):
+        # Connect to the database
+        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+            
+            print("\n============================\n")
+
+            with connection.cursor() as cursor:
+                fetch_query = """
+                    SELECT job_id, user_id, title, description, employer, location, salary 
+                    FROM jobs 
+                    WHERE user_id = %s;
+                    """
+                cursor.execute(fetch_query, (self.userID,))
+                active_jobs = cursor.fetchall()
+
+                options = []
+                ids = []
+
+                if active_jobs:
+                    print("\n List of Active Job Postings by The User \n")
+                    for jobs in active_jobs:
+                        options.append(f"Job ID: {jobs[0]}, User ID: {jobs[1]}, Title: {jobs[2]}, Description: {jobs[3]}, Employer: {jobs[4]}, Location: {jobs[5]}, Salary: {jobs[6]}")
+                        ids.append(jobs[0])
+                    options.append("Go Back")
+                    
+                    choice = prompt({
+                            "type": "list",
+                            "message" : "List of Jobs:",
+                            "choices": options
+                        })
+            
+                    if choice[0] == "Go Back":
+                        return
+                    
+                    else:
+                        delete_query = """
+                        DELETE FROM jobs   
+                        WHERE job_id = %s;
+                        """
+                        id = options.index(choice[0])
+                        cursor.execute(delete_query, (ids[id],) )
+                        
+                else:
+                    print("\nNo active job postings found.\n")
+    
+    def searchforAJob(self):
+        # Connect to the database
+        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+            
+            print("\n============================\n")
+
+            with connection.cursor() as cursor:
+                fetch_query = """
+                    SELECT job_id, user_id, title, description, employer, location, salary 
+                    FROM jobs;
+                    """
+                cursor.execute(fetch_query)
+                active_jobs = cursor.fetchall()
+
+                options = []
+                
+                details = []
+                
+                if active_jobs: 
+                    print("\nActive Job Postings \n")
+
+                    for jobs in active_jobs:
+                        temp = f"Job ID: {jobs[0]}, Title: {jobs[2]}"
+                        if self.hasAppliedForJob(jobs[0]):
+                            temp = temp + " (Applied to)"
+                        options.append(temp)
+                        details.append(f"Job ID: {jobs[0]} \nUser ID: {jobs[1]} \nTitle: {jobs[2]}, \nDescription: {jobs[3]}, \nEmployer: {jobs[4]}, \nLocation: {jobs[5]}, \nSalary: {jobs[6]}")
+                    options.append("Go Back")
+                    
+                    while True:
+                        choice = prompt({
+                                "type": "list",
+                                "message" : "List of Jobs:",
+                                "choices": options
+                            })
+                        
+                        if choice[0] == "Go Back":
+                            return
+                        else:
+                            id = options.index(choice[0])
+                            print(details[id])
+                            print('\n=================================\n')
+                            
+                            # After showing job details, offer options to save or apply
+                            job_id = active_jobs[id][0]
+                            sub_choice = prompt({
+                                "type": "list",
+                                "message": "Job Options:",
+                                "choices": ["Save/Unsave the Job", "Apply for the Job", "Go Back"]
+                            })
+
+                            if sub_choice[0] == "Save/Unsave the Job":
+                                self.saveJobToDatabase(job_id)
+                            elif sub_choice[0] == "Apply for the Job":
+                                self.applyForJob(job_id)
+                            elif sub_choice[0] == "Go Back":
+                                continue
+
+                else:
+                    print("\nNo active job postings found.\n")
+
 
     def signIn(self):
         """
