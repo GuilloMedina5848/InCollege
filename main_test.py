@@ -50,7 +50,7 @@ defaultStartDate = f"{defaultStartYear}-{defaultStartMonth}-{defaultStartDay}"
 defaultStartDatetime = datetime.date(defaultStartYear, defaultStartMonth, defaultStartDay)
 defaultApplicationDescription = "compellingExplanation"
 
-tables = ["job_applications", "saved_jobs", "educations", "experiences", "profiles", "jobs", "friendships", "users"] # this needs to be in an order such that the tables with linked keys are deleted first
+defaultMessage = "pyTestMessage"
 
 DATABASE_TEST_NAME = "incollegetestdb"
 DATABASE_ORIGINAL = DATABASE_NAME_
@@ -76,6 +76,9 @@ def clear():
             # List of tables and their sequences if any.
             # Dependent tables (with foreign keys) should be deleted before primary tables.
             tables_sequences = [
+                ("messages", "messages_message_id_seq"),
+                ("job_applications", None),
+                ("saved_jobs", None),
                 ("educations", None),
                 ("experiences", None),
                 ("profiles", None),
@@ -1260,6 +1263,78 @@ def test_listSavedJobs(monkeypatch, capsys):
 
   assert "\nSaved Jobs:\n- Title: pyTester\n  Description: testsPython\n  Employer: pyTest\n  Location: pyTest\n  Salary: 0" in capsys.readouterr().out
 
+def test_sendMessage(monkeypatch, capsys):
+  addTestUser(2)
+  friendships = [[1, defaultUser, defaultUser+"1", "confirmed"]]
+  addRowsToTable(friendships, "friendships")
+
+  prompts = iter([{0: 'For Existing Users'}, {0: 'Send message'}, {0: f"User ID: {defaultUser+'1'}, Name: {defaultFirstName} {defaultLastName}"}, {0: 'Log out'}, {0: 'Exit'}])
+  monkeypatch.setattr(promptModule, lambda _: next(prompts))
+
+  inputs = iter([defaultUser, defaultPassword, defaultMessage])
+  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+  InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
+
+  assert f"Message sent to user {defaultUser+'1'}!" in capsys.readouterr().out
+  assert readDB("messages")[0] == [(1, defaultUser, defaultUser + '1', defaultMessage, "unread")]
+
+def test_sendMessageThroughNetwork(monkeypatch, capsys):
+  clear()
+  firstUser = list(defaultUserTuple)
+  secondUser = list(defaultUserTuple)
+  firstUser[10] = "Plus"
+  secondUser[0] = defaultUser+'1'
+  users = [tuple(firstUser), tuple(secondUser)]
+  addRowsToTable(users, 'users')
+  friendships = [[1, defaultUser, defaultUser+"1", "confirmed"]]
+  addRowsToTable(friendships, "friendships")
+
+  prompts = iter([{0: 'For Existing Users'}, {0: 'Show my Network'}, {0: f"User ID: {defaultUser+'1'}, Name: {defaultFirstName} {defaultLastName}"}, {0: 'Log out'}, {0: 'Exit'}])
+  monkeypatch.setattr(promptModule, lambda _: next(prompts))
+
+  inputs = iter([defaultUser, defaultPassword, "yes", defaultMessage])
+  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+  InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
+
+  assert f"Message sent to user {defaultUser+'1'}!" in capsys.readouterr().out
+  assert readDB("messages")[0] == [(1, defaultUser, defaultUser + '1', defaultMessage, "unread")]
+
+def test_sendMessagePlus(monkeypatch, capsys):
+  clear()
+  firstUser = list(defaultUserTuple)
+  secondUser = list(defaultUserTuple)
+  firstUser[10] = "Plus"
+  secondUser[0] = defaultUser+'1'
+  users = [tuple(firstUser), tuple(secondUser)]
+  addRowsToTable(users, 'users')
+
+  prompts = iter([{0: 'For Existing Users'}, {0: 'Send message'}, {0: 'Show all students'}, {0: f"User ID: {defaultUser+'1'}, Name: {defaultFirstName} {defaultLastName}"}, {0: 'Go back'}, {0: 'Log out'}, {0: 'Exit'}])
+  monkeypatch.setattr(promptModule, lambda _: next(prompts))
+
+  inputs = iter([defaultUser, defaultPassword, defaultMessage])
+  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+  InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
+
+  assert f"Message sent to user {defaultUser+'1'}!" in capsys.readouterr().out
+  assert readDB("messages")[0] == [(1, defaultUser, defaultUser + '1', defaultMessage, "unread")]
+
+def test_messageNotificationOnLogin(monkeypatch, capsys):
+  addTestUser(2)
+  messages = [[1, defaultUser+'1', defaultUser, defaultMessage, "unread"]]
+  addRowsToTable(messages, "messages")
+
+  prompts = iter([{0: 'For Existing Users'}, {0: 'Log out'}, {0: 'Exit'}])
+  monkeypatch.setattr(promptModule, lambda _: next(prompts))
+
+  inputs = iter([defaultUser, defaultPassword])
+  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+  InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
+
+  assert f"You have 1 pending messages in your inbox!" in capsys.readouterr().out
 
 def test_dummy():
   dropTestDatabase()
