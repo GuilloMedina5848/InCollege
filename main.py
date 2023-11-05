@@ -908,6 +908,156 @@ class InCollegeServer():
         except ValueError:              
             print("Invalid choice. Please enter a valid option.")
 
+    def applyForJob(self, job_id):
+        # Check if the user has already applied for this job
+        if self.hasAppliedForJob(job_id):
+            print("You have already applied for this job. You cannot apply again.")
+            return
+        # Check if the user has posted this job
+        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT user_id FROM jobs WHERE job_id = %s", (job_id,))
+                job_user_id = cursor.fetchone()
+                if job_user_id and job_user_id[0] == self.userID:
+                    print("You cannot apply for a job you have posted.")
+                    return
+        print("Graduation Date Information:")
+        graduation_date = helper.getDate()
+        print("Start Date Information:")
+        start_date = helper.getDate()
+        paragraph_text = input("Explain why you think you would be a good fit for this job: ")
+
+        # Store the application in the database
+        self.storeJobApplication(job_id, graduation_date, start_date, paragraph_text)
+
+        print("Application submitted successfully!")
+
+    def listJobs(self):
+        """
+        Retrieve a list of all available jobs.
+        """
+        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+            with connection.cursor(row_factory=dict_row) as cursor:
+                cursor.execute("SELECT * FROM jobs")
+                jobs = cursor.fetchall()
+        return jobs
+
+    def hasAppliedForJob(self, job_id):
+        """
+        Check if the user has already applied for a job.
+        """
+        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT * FROM job_applications WHERE user_id = %s AND job_id = %s", (self.userID, job_id))
+                return cursor.fetchone() is not None
+
+    def storeJobApplication(self, job_id, graduation_date, start_date, paragraph_text):
+        """
+        Store the job application in the database.
+        """
+        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    "INSERT INTO job_applications (user_id, job_id, graduation_date, start_date, paragraph_text) VALUES (%s, %s, %s, %s, %s)",
+                    (self.userID, job_id, graduation_date, start_date, paragraph_text)
+                )
+
+    def listAppliedJobs(self):
+        """
+        Print a list of jobs that the user has applied for.
+        """
+        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+            with connection.cursor(row_factory=dict_row) as cursor:
+                cursor.execute("SELECT jobs.* FROM jobs INNER JOIN job_applications ON jobs.job_id = job_applications.job_id WHERE job_applications.user_id = %s", (self.userID,))
+                applied_jobs = cursor.fetchall()
+
+        if not applied_jobs:
+            print("You haven't applied for any jobs yet.")
+        else:
+            print("\nJobs Applied For:")
+            for job in applied_jobs:
+                print(f"- Title: {job['title']}")
+                print(f"  Description: {job['description']}")
+                print(f"  Employer: {job['employer']}")
+                print(f"  Location: {job['location']}")
+                print(f"  Salary: {job['salary']}\n")
+
+    def listUnappliedJobs(self):
+        """
+        Print a list of jobs that the user has not yet applied for.
+        """
+        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+            with connection.cursor(row_factory=dict_row) as cursor:
+                cursor.execute("SELECT * FROM jobs WHERE job_id NOT IN (SELECT job_id FROM job_applications WHERE user_id = %s)", (self.userID,))
+                unapplied_jobs = cursor.fetchall()
+
+        if not unapplied_jobs:
+            print("You've applied for all available jobs.")
+        else:
+            print("\nJobs Not Yet Applied For:")
+            for job in unapplied_jobs:
+                print(f"- Title: {job['title']}")
+                print(f"  Description: {job['description']}")
+                print(f"  Employer: {job['employer']}")
+                print(f"  Location: {job['location']}")
+                print(f"  Salary: {job['salary']}\n")
+
+    def hasSavedJob(self, job_id):
+        """
+        Check if the user has already saved a job.
+        """
+        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT * FROM saved_jobs WHERE user_id = %s AND job_id = %s", (self.userID, job_id))
+                return cursor.fetchone() is not None
+
+    def saveJobToDatabase(self, job_id):
+        """
+        Save the job to the user's saved jobs list in the database.
+        """
+        if self.hasSavedJob(job_id):
+            print("Job successfully unsaved")
+            with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+                with connection.cursor() as cursor:
+                    # First, delete any existing saved job with the same job_id
+                    cursor.execute(
+                        "DELETE FROM saved_jobs WHERE user_id = %s AND job_id = %s",
+                        (self.userID, job_id)
+                    )
+        else:
+            print("Job successfully saved")
+            with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+                with connection.cursor() as cursor:
+                    cursor.execute(
+                        "INSERT INTO saved_jobs (user_id, job_id) VALUES (%s, %s)",
+                        (self.userID, job_id)
+                )
+
+    def listSavedJobs(self):
+        """
+        Print a list of jobs that the user has saved.
+        """
+        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+            with connection.cursor(row_factory=dict_row) as cursor:
+                cursor.execute("""
+                    SELECT jobs.* 
+                    FROM jobs
+                    INNER JOIN saved_jobs ON jobs.job_id = saved_jobs.job_id
+                    WHERE saved_jobs.user_id = %s
+                """, (self.userID,))
+                saved_jobs = cursor.fetchall()
+
+        if not saved_jobs:
+            print("You haven't saved any jobs yet.")
+        else:
+            print("\nSaved Jobs:")
+            for job in saved_jobs:
+                print(f"- Title: {job['title']}")
+                print(f"  Description: {job['description']}")
+                print(f"  Employer: {job['employer']}")
+                print(f"  Location: {job['location']}")
+                print(f"  Salary: {job['salary']}\n")
+
     def editEducation(self):
         while True:
             choice = prompt({
@@ -1242,14 +1392,22 @@ class InCollegeServer():
                                 choice = prompt({
                                         "type": "list", 
                                         "message" : "Select one:",
-                                        "choices": ["Search for a Job", "Post a Job", "Back to the main menu"]
+                                        "choices": ["Search for a Job", "Post a Job", "Delete a Job" , "List of Applied Jobs", "List not Applied Jobs" , "List of Saved Jobs", "Back to the main menu"]
                                 })
 
                                 match choice[0]:
                                     case "Search for a Job":
-                                        print("\nunder construction.\n")
+                                        self.searchforAJob()
                                     case "Post a Job":
                                         self.addJob()
+                                    case "Delete a Job":
+                                        self.deleteJob()
+                                    case "List of Applied Jobs":
+                                        self.listAppliedJobs()
+                                    case "List not Applied Jobs":
+                                        self.listUnappliedJobs()
+                                    case "List of Saved Jobs":
+                                        self.listSavedJobs()
                                     case "Back to the main menu":
                                         break  
                                     case __:    # <--- Else
