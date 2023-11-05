@@ -11,7 +11,8 @@ DATABASE_QUERY_STRING = """
                             has_ad BOOLEAN DEFAULT TRUE,
                             language VARCHAR(255) DEFAULT 'English',
                             university VARCHAR(255),
-                            major VARCHAR(255)
+                            major VARCHAR(255),
+                            tier VARCHAR(255) DEFAULT 'Standard'
                         );
 
                         CREATE TABLE jobs (
@@ -58,6 +59,14 @@ DATABASE_QUERY_STRING = """
                             degree VARCHAR(255),
                             year_started INT,
                             year_ended INT
+                        );
+
+                        CREATE TABLE messages (
+                            message_id SERIAL PRIMARY KEY,
+                            sender VARCHAR(255) REFERENCES users(user_id),
+                            receiver VARCHAR(255) REFERENCES users(user_id),
+                            message_txt TEXT,
+                            status TEXT CHECK (status IN ('unread', 'read'))
                         );"""
 
 MAX_USERS = 10

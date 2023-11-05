@@ -126,6 +126,7 @@ class InCollegeServer():
                 self.has_sms = user['has_sms']
                 self.has_ad = user['has_ad']
                 self.language = user['language']
+                self.tier = user['tier']
                 self.loggedIn = True
 
                 print(f"\nWelcome, {existingUserID}. You have successfully logged in.")
@@ -160,9 +161,31 @@ class InCollegeServer():
                     last = input("Please enter your last name: ")
                     university = input("Please enter your university: ")
                     major = input("Please enter your major: ")
+                    try:
+                        # Ask for user input
+                        choice = prompt({ "type": "list",
+                                            "message" : "Select a membership tier",
+                                            "choices": ["Standard (free)",
+                                                        "Plus ($10/month)"]
+                            })
+                        
+                        match choice[0]:
+                            case "Standard (free)":
+                                tier = "Standard"
+
+                            case "Plus ($10/month)":
+                                tier = "Plus"
+                            
+                            case __:  # <--- Else
+                                raise ValueError
+                    
+                    except ValueError:
+                        print("Choice not found, please try again.\n") 
+                    
                     has_email = True
                     has_sms = True
                     has_ad = True
+
                     if self.validUser(userID, password):
                         print("\nYour username is unique and the password meets all the requirements.\n")
 
@@ -171,10 +194,10 @@ class InCollegeServer():
                             with connection.cursor() as cursor:
                                 # Insert Data into users table
                                 insert_query = """
-                                INSERT INTO users (user_id, password, first_name, last_name, has_email, has_sms, has_ad, university, major)
-                                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);
+                                INSERT INTO users (user_id, password, first_name, last_name, has_email, has_sms, has_ad, university, major, tier)
+                                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
                                 """
-                                cursor.execute(insert_query, (userID, password, first, last, has_email, has_sms, has_ad, university, major))
+                                cursor.execute(insert_query, (userID, password, first, last, has_email, has_sms, has_ad, university, major, tier))
 
                         print("\n============================\n")
                         print("Thank you for creating an account.")
@@ -187,6 +210,7 @@ class InCollegeServer():
                         self.has_sms = True
                         self.has_ad = True
                         self.language = "English"
+                        self.tier = tier
                         
                         print(f"\nWelcome, {self.userID}. You have successfully logged in.\n")
                         break
@@ -273,7 +297,7 @@ class InCollegeServer():
 
                 search_criteria = input(prompt_message)
 
-                 # Connect to the database
+                # Connect to the database
                 with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
                     with connection.cursor() as cursor:
                         # Construct the query based on the chosen option
@@ -1058,8 +1082,10 @@ class InCollegeServer():
         """
         # loggedIn = True
         while True:
+            membershipTier = str(self.tier)
+            print("\nMembership: " + membershipTier)
             #Display current language
-            print("\nCurrent Language: " + self.language)
+            print("Current Language: " + self.language)
             #Display preferences
             if self.has_email == True:
                 emailPreference = "ON"
@@ -1078,6 +1104,7 @@ class InCollegeServer():
             
             print("Current preferences (Emails: " + emailPreference + ", SMS: " + smsPreference + ", Advertising: " + adsPreference + ")")
             self.checkPendingRequests()
+            self.checkPendingMessages()
 
             try: 
                 choice = prompt({
@@ -1092,6 +1119,7 @@ class InCollegeServer():
                                             "View Pending Connection Requests",
                                             "Show my Network",
                                             "Disconnect from a Connection",
+                                            "Send message",
                                             "Log out"]
                 })
                 
@@ -1163,6 +1191,8 @@ class InCollegeServer():
                         self.viewConnectedFriends()
                     case "Disconnect from a Connection":
                         self.disconnectFriend()
+                    case "Send message":
+                        self.MessageMenu()
                     case "Log out":
                         # Restore the variables
                         self.userID = ""
@@ -1186,11 +1216,11 @@ class InCollegeServer():
         print("\n Welcome to InCollege!")
         print("\n======================================\n")
         print("Steven's story:\n")
-        print("When I first started college during my freshman year I was very shy and didn’t really have many close friends or connections to other people besides my small circle of friends. On top of that, I was looking for a part-time job to help my parents pay my tuition for college, the problem was that I didn’t really had a resume to boast about or any real work history, so no working professional really wanted to talk to me. That same freshman year a professor introduced us to inCollege during a class and I tried it out of curiosity, it made all the difference. inCollege allowed me to connect with other college students at other universities who were in my major and talk about school, jobs, and projects. Being online meant that even if I was shy I was still able to create relationships with real people from outside my small circle of friends and expand my connections. Having a connection made all the difference when talking to people about job, salaries, and offers. inCollege understands that everyone's looking for a first job and will provide the tools that they need in order to be successful. Not only was I able to find a part-time job during my college years, but it even landed me a job I was not expecting. One of my friends I made during inCollege got the job first and after working there for a while referred me to his boss, I already had a position at a well-recognized company before I even graduated! By the time I transitioned to LinkedIn I had more experiences I could use on my resume. My time using inCollege really made all the difference for me and sure it will help you too. Whether it is creating an identity on inCollege, creating connections with other students from other universities, or accessing job information, inCollege will help provide you the tools you need.")
+        print("When I first started college during my freshman year I was very shy and didn’t really have many close friends or connections to other people besides my small circle of friends. On top of that, I was looking for a part-time job to help my parents pay my tuition for college, the problem was that I didn’t really had a resume to boast about or any real work history and no working professional really wanted to talk to me. That same freshman year a professor introduced us to InCollege during a class and I tried it out of curiosity, it made all the difference! InCollege allowed me to connect with other college students at other universities who were in my major and talk about school, jobs, and projects. Being online meant that even if I was shy I was still able to create relationships with real people and expand my connections. Having connections made all the difference when talking to people about job, salaries, and offers. InCollege understands that everyone's looking for a first job and will provide the tools that they need in order to be successful. Not only was I able to find a part-time job during my college years, but it even landed me a job I was not expecting. One of my friends I made during inCollege got the job first and after working there for a while referred me to his boss, I already had a position at a well-recognized company before I even graduated! By the time I transitioned to LinkedIn I had more experiences I could use on my resume. My time using InCollege really made all the difference for me and sure it will help you too. Whether it is creating an identity on inCollege, creating connections with other students from other universities, or accessing job information, inCollege will help provide you the tools you need.")
         print("\n======================================\n")
         while True:
             try:
-            # Ask for user input
+                # Ask for user input
                 choice = prompt({
                             "type": "list",
                             "message" : "Login page",
@@ -1377,6 +1407,46 @@ class InCollegeServer():
             
             self.viewProfile(ids[options.index(choice[0])])
 
+            while True:
+                Userchoice = input("Do you want to send a message to this friend? (yes/no): ").lower()
+                if Userchoice == 'yes':
+                    self.addMessageToDatabase(from_user_id = self.userID, to_user_id = ids[options.index(choice[0])])
+                    break
+                elif Userchoice == 'no':
+                    break
+                else:
+                    print("Unrecognized input. Please enter yes or no.")
+
+            """
+            I tried putting them into an inquirerPy but for some reason when selecting them they both say choice not found.
+
+            while True:
+                try:
+                    choice = prompt({
+                                "type": "list",
+                                "message" : "What do you want to do?:",
+                                "choices": ["View Profile", 
+                                            "Send message", 
+                                            "Go back"]
+                    })
+                    match choice[0]:
+                        case "View Profile":
+                            self.viewProfile(ids[options.index(choice[0])])
+                        
+                        case "Send message":
+                            self.addMessageToDatabase(from_user_id = self.userID, to_user_id = ids[options.index(choice[0])])
+
+                        case "Go back":
+                            return
+
+                        case __:    # <--- Else
+                            raise ValueError
+            
+                except ValueError:
+                        print("Choice not found, please try again.\n")
+
+            """
+
         else:
             print("\nYou have no connections in the system.")
 
@@ -1402,6 +1472,145 @@ class InCollegeServer():
                     print("Successfully disconnected!")
                 else:
                     print("The given user is not in your connection list.")
+    
+    def MessageMenu(self):
+        if self.tier == "Standard":
+            #Standard members can only send messages from people who have accepted their friend requests
+            self.sendMessageToFriend()
+        elif self.tier == "Plus":
+            #Plus members can generate a list of all the students who are in the system and can send a message to any of them
+            while True:
+                try:
+                    choice = prompt({
+                                "type": "list",
+                                "message" : "Send message to:",
+                                "choices": ["A friend", 
+                                            "Show all students", 
+                                            "Go back"]
+                    })
+                    match choice[0]:
+                        case "A friend":
+                            self.sendMessageToFriend()
+                        
+                        case "Show all students":
+                            self.sendMessageToUser()
+
+                        case "Go back":
+                            return
+
+                        case __:    # <--- Else
+                            raise ValueError
+            
+                except ValueError:
+                        print("Choice not found, please try again.\n")
+    
+    def sendMessageToFriend(self):
+        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+            with connection.cursor() as cursor:
+                # Get friends where the current user is student1
+                fetch_query_1 = """
+                SELECT student2_id, first_name, last_name 
+                FROM friendships JOIN users ON friendships.student2_id = users.user_id
+                WHERE student1_id = %s AND status = 'confirmed';
+                """
+                cursor.execute(fetch_query_1, (self.userID,))
+                friends_1 = cursor.fetchall()
+
+                # Get friends where the current user is student2
+                fetch_query_2 = """
+                SELECT student1_id, first_name, last_name 
+                FROM friendships JOIN users ON friendships.student1_id = users.user_id
+                WHERE student2_id = %s AND status = 'confirmed';
+                """
+                cursor.execute(fetch_query_2, (self.userID,))
+                friends_2 = cursor.fetchall()
+
+        friends = friends_1 + friends_2
+        options = []
+        ids = []
+        if friends:
+            print("\nSend message to:")
+            for friend in friends:
+                options.append(f"User ID: {friend[0]}, Name: {friend[1]} {friend[2]}")
+                ids.append(friend[0])
+            options.append("Go Back")
+
+            choice = prompt({
+                            "type": "list",
+                            "message" : "List of Friends:",
+                            "choices": options
+                        })
+                
+            if choice[0] == "Go Back":
+                return
+
+            self.addMessageToDatabase(from_user_id = self.userID, to_user_id = ids[options.index(choice[0])])
+
+        else:
+            print("\nYou have no connections in the system.")
+
+    def sendMessageToUser(self):
+        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+            with connection.cursor() as cursor:
+                # Construct the query
+                fetch_query = f"""
+                SELECT user_id, first_name, last_name 
+                FROM users; 
+                """
+                cursor.execute(fetch_query)
+                users = cursor.fetchall()
+            
+        options = []
+        ids = []       
+        if users:
+            print("\nSend message to:")
+            for user in users:
+                options.append(f"User ID: {user[0]}, Name: {user[1]} {user[2]}")
+                ids.append(user[0])
+            options.append("Go Back")
+
+            choice = prompt({
+                    "type": "list",
+                    "message" : "List of Users:",
+                    "choices": options
+                })
+                
+            if choice[0] == "Go Back":
+                return
+
+            self.addMessageToDatabase(from_user_id = self.userID, to_user_id = ids[options.index(choice[0])])
+
+        else:
+            print("\nYou have no connections in the system.")
+
+    def addMessageToDatabase(self, from_user_id, to_user_id):
+        message = input("Enter the message you want to send: \n")
+        # Connect to the database
+        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+            with connection.cursor() as cursor:
+                # Insert the message into the table
+                insert_query = """
+                INSERT INTO messages (sender, receiver, message_txt, status) 
+                VALUES (%s, %s, %s, 'unread');
+                """
+                cursor.execute(insert_query, (from_user_id, to_user_id, message))
+                connection.commit()
+
+        print(f"\nMessage sent to user {to_user_id}!")
+    
+    def checkPendingMessages(self):
+        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+            with connection.cursor() as cursor:
+                fetch_query = """
+                SELECT sender 
+                FROM messages 
+                WHERE receiver = %s AND status = 'unread';
+                """
+                cursor.execute(fetch_query, (self.userID,))
+                messages = cursor.fetchall()
+
+        if messages:
+            print(f"\nYou have {len(messages)} pending messages in your inbox!")
 
     def __init__(self, databaseName = DATABASE_NAME_, databaseUser = DATABASE_USER_, databasePassword = DATABASE_PASSWORD_, databaseHost = DATABASE_HOST_, databasePort = DATABASE_PORT_):
         self.DATABASE_NAME = databaseName
