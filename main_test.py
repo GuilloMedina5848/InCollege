@@ -17,8 +17,10 @@ defaultEmailPref = True
 defaultSMSPref = True
 defaultAdsPref = True
 defaultLanguage = "English"
-defaultUniversity = "USF"
-defaultMajor = "CS"
+defaultUniversity = "University of South Florida"
+defaultMajor = "Computer Science"
+defaultUniversity = defaultUniversity.title()
+defaultMajor = defaultMajor.title()
 defaultTier = "Standard"
 defaultProfileTitle = "Title"
 defaultProfileAbout = "About"
@@ -319,15 +321,15 @@ def test_newUserInvalidCharacter(monkeypatch, capsys):
 
   for testPassword in testPasswords:
 
-    prompts = iter([{0: 'To Create an Account'}, {0: 'Standard (free)'}, {0: 'Standard (free)'}, {0: 'Log out'}, {0: 'Exit'}])
+    prompts = iter([{0: 'To Create an Account'}, {0: 'Standard (free)'}, {0: 'Log out'}, {0: 'Exit'}])
     monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
-    inputs = iter([defaultUser, testPassword, defaultFirstName, defaultLastName, defaultUniversity, defaultMajor, defaultUser, defaultPassword, defaultFirstName, defaultLastName, defaultUniversity, defaultMajor])
+    inputs = iter([defaultUser, testPassword, defaultPassword, defaultFirstName, defaultLastName, defaultUniversity, defaultMajor])
     monkeypatch.setattr('builtins.input', lambda _: next(inputs))
 
     InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
 
-    assert "Your username is already taken or the password doesn't meet requirements. Please start over" in capsys.readouterr().out
+    assert "This password doesn't meet all the requirements." in capsys.readouterr().out
     assert readDB("users") == defaultUserTable
     clear()
 
@@ -340,50 +342,38 @@ def test_newUserInvalidLength(monkeypatch, capsys):
   for testPassword in testPasswords:
     # simulate inputs: choose to create an account, provide a username and the test password, then provide a valid username and password combo to terminate the program
 
-    prompts = iter([{0: 'To Create an Account'}, {0: 'Standard (free)'}, {0: 'Standard (free)'}, {0: 'Log out'}, {0: 'Exit'}])
+    prompts = iter([{0: 'To Create an Account'}, {0: 'Standard (free)'}, {0: 'Log out'}, {0: 'Exit'}])
     monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
-    inputs = iter([defaultUser, testPassword, defaultFirstName, defaultLastName, defaultUniversity, defaultMajor, defaultUser, defaultPassword, defaultFirstName, defaultLastName, defaultUniversity, defaultMajor])
+    inputs = iter([defaultUser, testPassword, defaultPassword, defaultFirstName, defaultLastName, defaultUniversity, defaultMajor])
     monkeypatch.setattr('builtins.input', lambda _: next(inputs))
 
     InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
 
     # test if the output informs the user of the invalid password
-    assert "Your username is already taken or the password doesn't meet requirements. Please start over" in capsys.readouterr().out
+    assert "This password doesn't meet all the requirements." in capsys.readouterr().out
 
     # make sure no new users were added to the Users.txt file with invalid input
     assert readDB("users") == defaultUserTable
     clear()
 
 # tests new user creation with existing username
-# kind of an inelegant implementation but works
 def test_newUserInvalidExisting(monkeypatch, capsys):
-  clear()
+  addTestUser()
 
-  testUsernames = [
-      "pyTestUser1", "pyTestUser2", "thisIsALongTestStringPyTestUser3", "4"
-  ]
+  secondUser = list(defaultUserTuple)
+  secondUser[0] = defaultUser+'1'
 
-  users = [[]]
+  prompts = iter([{0: 'To Create an Account'}, {0: 'Standard (free)'}, {0: 'Log out'}, {0: 'Exit'}])
+  monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
-  for testUsername in testUsernames:
-    users[0].append((testUsername, defaultPassword, defaultFirstName, defaultLastName, defaultEmailPref, defaultSMSPref, defaultAdsPref, defaultLanguage, defaultUniversity, defaultMajor, defaultTier))
+  inputs = iter([defaultUser, defaultUser+'1', defaultPassword, defaultFirstName, defaultLastName, defaultUniversity, defaultMajor])
+  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
 
-  addRowsToTable(users[0], 'users')
+  InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
 
-  for testUsername in testUsernames:
-
-    prompts = iter([{0: 'To Create an Account'}, {0: 'Standard (free)'}, {0: 'Standard (free)'}, {0: 'Log out'}, {0: 'Exit'}])
-    monkeypatch.setattr(promptModule, lambda _: next(prompts))
-
-    inputs = iter([testUsername, defaultPassword, defaultFirstName, defaultLastName, defaultUniversity, defaultMajor, defaultUser, defaultPassword, defaultFirstName, defaultLastName, defaultUniversity, defaultMajor])
-    monkeypatch.setattr('builtins.input', lambda _: next(inputs))
-
-    InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
-    assert capsys.readouterr().out.split('\n')[-3] == "Thank you, bye!"
-    users[0].append(defaultUserTuple)
-    assert users == readDB("users")
-    users[0].pop()
+  assert "This username is already taken." in capsys.readouterr().out
+  assert readDB("users") == [[defaultUserTuple, tuple(secondUser)]]
 
 # tests new user creation with maximum number of users
 def test_newUserExceedsLimit(monkeypatch, capsys):
@@ -996,10 +986,10 @@ def test_viewFriendEmptyProfile(monkeypatch, capsys):
   connections = [[1, defaultUser, defaultUser+"1", "confirmed"]]
   addRowsToTable(connections, "friendships")
 
-  prompts = iter([{0: 'For Existing Users'}, {0: 'Show my Network'}, {0: f'User ID: {defaultUser+"1"}, Name: {defaultFirstName} {defaultLastName}'}, {0: 'Log out'}, {0: 'Exit'}])
+  prompts = iter([{0: 'For Existing Users'}, {0: 'Show my Network'}, {0: f'User ID: {defaultUser+"1"}, Name: {defaultFirstName} {defaultLastName}'}, {0: 'View Profile'}, {0: 'Go back'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
-  inputs = iter([defaultUser, defaultPassword, "no"])
+  inputs = iter([defaultUser, defaultPassword])
   monkeypatch.setattr('builtins.input', lambda _: next(inputs))
 
   InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
@@ -1013,7 +1003,7 @@ def test_viewFriendProfile(monkeypatch, capsys):
   profile = [[1, defaultUser+"1", defaultProfileTitle, defaultProfileAbout]]
   addRowsToTable(profile, "profiles")
 
-  prompts = iter([{0: 'For Existing Users'}, {0: 'Show my Network'}, {0: f'User ID: {defaultUser+"1"}, Name: {defaultFirstName} {defaultLastName} (View Profile)'}, {0: 'Log out'}, {0: 'Exit'}])
+  prompts = iter([{0: 'For Existing Users'}, {0: 'Show my Network'}, {0: f'User ID: {defaultUser+"1"}, Name: {defaultFirstName} {defaultLastName} (View Profile)'}, {0: 'View Profile'}, {0: 'Go back'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword, "no"])
@@ -1290,10 +1280,10 @@ def test_sendMessageThroughNetwork(monkeypatch, capsys):
   friendships = [[1, defaultUser, defaultUser+"1", "confirmed"]]
   addRowsToTable(friendships, "friendships")
 
-  prompts = iter([{0: 'For Existing Users'}, {0: 'Show my Network'}, {0: f"User ID: {defaultUser+'1'}, Name: {defaultFirstName} {defaultLastName}"}, {0: 'Log out'}, {0: 'Exit'}])
+  prompts = iter([{0: 'For Existing Users'}, {0: 'Show my Network'}, {0: f"User ID: {defaultUser+'1'}, Name: {defaultFirstName} {defaultLastName}"}, {0: 'Send Message'}, {0: 'Go back'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
-  inputs = iter([defaultUser, defaultPassword, "yes", defaultMessage])
+  inputs = iter([defaultUser, defaultPassword, defaultMessage])
   monkeypatch.setattr('builtins.input', lambda _: next(inputs))
 
   InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
