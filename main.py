@@ -30,6 +30,25 @@ class InCollegeServer(InCollegeBackend):
     maxJobs = 10
     maxUsers = 10
 
+    def messageMenu(self):
+        while True:
+            try:
+                choice = prompt({"type": "list",
+                                "message" : "Main Menu:",
+                                "choices": ["Inbox", "Send Message", "Go Back"]})
+                match choice[0]:
+                    case "Inbox":
+                        self.displayInbox()
+                    case "Send Message":
+                        self.sendMessageMenu()
+                    case "Go Back":
+                        return
+                    case __:
+                        raise ValueError
+        
+            except ValueError:              
+                print("Invalid choice. Please enter a valid option.")
+
     def addJob(self):
         """
         Allows a logged-in user to post a job.
@@ -244,18 +263,18 @@ class InCollegeServer(InCollegeBackend):
                     "type": "list",
                     "message": "General",
                     "choices": [
-                        "For Existing User",
-                        "To Create an Account",
+                        "Sign In",
+                        "Sign Up",
                         "Back to General"
                     ]
                 })
 
                 match choice[0]:
-                    case "For Existing User":
+                    case "Sign In":
                         self.signIn()
                         if self.loggedIn:
                             self.mainMenu()
-                    case "To Create an Account":
+                    case "Sign Up":
                         self.signUp()
                         if self.loggedIn:
                             self.mainMenu()
@@ -271,7 +290,7 @@ class InCollegeServer(InCollegeBackend):
                 print("Choice not found, please try again.\n") 
 
     def searchExistingUsers(self):
-        # Search for existing users by last name, university, or major
+        # Search Sign In by last name, university, or major
         # When results of these searches are displayed, the student will have the option of sending that student a
         # request to connect
         column_map = {
@@ -319,14 +338,14 @@ class InCollegeServer(InCollegeBackend):
                         for user in users:
                             ids.append(user[0])
                             prompts.append(f"User ID: {user[0]}, Name: {user[1]} {user[2]}, University: {user[3]}, Major: {user[4]}")
-                        prompts.append("Go back.")
+                        prompts.append("Go Back")
                         try:
                             choice_response = prompt({
                                 "type": "list",
                                 "message": "Users:",
                                 "choices": prompts
                             })
-                            if choice_response[0] == "Go back.":
+                            if choice_response[0] == "Go Back":
                                 break
                             elif choice_response[0] in prompts:
                                 connect_choice = input("Do you want to send this user a request to connect? (yes/no): ").lower()
@@ -926,8 +945,7 @@ class InCollegeServer(InCollegeBackend):
                                             "View Pending Connection Requests",
                                             "Show my Network",
                                             "Disconnect from a Connection",
-                                            "Inbox",
-                                            "Send message",
+                                            "Messages",
                                             "Log out"]
                 })
                 
@@ -1007,9 +1025,7 @@ class InCollegeServer(InCollegeBackend):
                         self.viewConnectedFriends()
                     case "Disconnect from a Connection":
                         self.disconnectFriend()
-                    case "Inbox":
-                        self.displayInbox()
-                    case "Send message":
+                    case "Messages":
                         self.messageMenu()
                     case "Log out":
                         # Restore the variables
@@ -1043,23 +1059,23 @@ class InCollegeServer(InCollegeBackend):
                             "type": "list",
                             "message" : "Login page",
                             "choices": ["Learn why you should join InCollege", 
-                                        "For Existing Users", 
-                                        "To Create an Account", 
-                                        "To Find an Existing User",
+                                        "Sign In", 
+                                        "Sign Up", 
+                                        "Find an Existing User",
                                         "Useful Links",
                                         "InCollege Important Links",
                                         "Exit"]
                 })
                 match choice[0]:
-                    case "For Existing Users":
+                    case "Sign In":
                         self.signIn()
                         if self.loggedIn:
                             self.mainMenu()
-                    case "To Create an Account":
+                    case "Sign Up":
                         self.signUp()
                         if self.loggedIn:
                             self.mainMenu()
-                    case "To Find an Existing User":
+                    case "Find an Existing User":
                     # Call the searchExistingUsers function
                         self.searchExistingUsers()
                     case "Learn why you should join InCollege":
@@ -1093,7 +1109,7 @@ class InCollegeServer(InCollegeBackend):
 
             choice = prompt({
                             "type": "list",
-                            "message" : "Main Menu:",
+                            "message" : "View My Network:",
                             "choices": options
                         })
             
@@ -1107,7 +1123,7 @@ class InCollegeServer(InCollegeBackend):
                                 "message" : "What do you want to do?:",
                                 "choices": ["View Profile", 
                                             "Send Message", 
-                                            "Go back"]
+                                            "Go Back"]
                     })
                     match sub_choice[0]:
                         case "View Profile":
@@ -1116,7 +1132,7 @@ class InCollegeServer(InCollegeBackend):
                         case "Send Message":
                             self.addMessageToDatabase(from_user_id = self.userID, to_user_id = ids[options.index(choice[0])])
 
-                        case "Go back":
+                        case "Go Back":
                             return
 
                         case __:    # <--- Else
@@ -1135,7 +1151,7 @@ class InCollegeServer(InCollegeBackend):
         else:
             print("The given user is not in your connection list.")
     
-    def messageMenu(self):
+    def sendMessageMenu(self):
         if self.tier == "Standard":
             #Standard members can only send messages from people who have accepted their friend requests
             self.sendMessageToFriend()
@@ -1148,7 +1164,7 @@ class InCollegeServer(InCollegeBackend):
                                 "message" : "Send message to:",
                                 "choices": ["A friend", 
                                             "Show all students", 
-                                            "Go back"]
+                                            "Go Back"]
                     })
                     match choice[0]:
                         case "A friend":
@@ -1157,7 +1173,7 @@ class InCollegeServer(InCollegeBackend):
                         case "Show all students":
                             self.sendMessageToUser()
 
-                        case "Go back":
+                        case "Go Back":
                             return
 
                         case __:    # <--- Else
@@ -1246,76 +1262,64 @@ class InCollegeServer(InCollegeBackend):
             print("\nYou have no connections in the system.")
  
     def displayInbox(self):
-        page = 1
-        messages_per_page = 10
+
+        options = []
+        ids = []
 
         while True:
-            with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
-                with connection.cursor() as cursor:
-                    # Fetch all messages for the current user
-                    fetch_query = """
-                    SELECT message_id, sender, message_txt 
-                    FROM messages 
-                    WHERE receiver = %s
-                    ORDER BY message_id;
-                    """
-                    cursor.execute(fetch_query, (self.userID,))
-                    messages = cursor.fetchall()
+            
+            messages = self.getMessages()
 
             if not messages:
                 print("\nNo messages in your inbox.")
-                return
+                options.append("Go Back")
 
-            start_idx = (page - 1) * messages_per_page
-            end_idx = start_idx + messages_per_page
+            else:
 
-            # Filter the messages to be displayed on the current page
-            messages_to_display = messages[start_idx:end_idx]
+                for message in messages:
+                    message_id, sender_id, message_txt, status = message
+                    sender_name = self.getUserName(sender_id)
+                    option = ""
+                    if status == 'unread':
+                        option += "(UNREAD) "
+                    option += f"{sender_name}: {message_txt[:19]}"
+                    if len(message_txt) > 20:
+                        option += "..."
+                    options.append(option)
+                    ids.append(message_id)
 
-            print("\nMessages:")
-            for message in messages_to_display:
-                message_id, sender_id, message_txt = message
-                sender_name = self.getUserName(sender_id)
-                print(f"\nMessage ID: {message_id}")
-                print(f"From: {sender_name}")
-                print(f"Message: {message_txt}")
+                options.append("Go Back")
 
             while True:
-                print("\nOptions:")
-                print("1. Delete message")
-                print("2. Read message")
-                print("3. Respond to message")
-                print("4. Next messages")
-                print("5. Previous messages")
-                print("6. Exit")
-                choice = input("Enter your choice: ")
-
-                if choice == '1':
-                    # Delete the message
-                    message_id = input("Enter the Message ID to delete: ")
-                    self.deleteMessage(message_id)
-                    break
-                elif choice == '2':
-                    # Read the message
-                    message_id = input("Enter the Message ID to read: ")
-                    self.readMessage(message_id)
-                    break
-                elif choice == '3':
-                    # Respond to the message
-                    message_id = input("Enter the Message ID to respond: ")
-                    receiver_id = self.getSenderID(message_id)
-                    self.respondToMessage(receiver_id)
-                    break
-                elif choice == '4':
-                    page += 1
-                    break
-                elif choice == '5':
-                    page -= 1
-                    break
-                elif choice == '6':
+                choice = prompt({
+                                        "type": "list",
+                                        "message" : "Messages:",
+                                        "choices": options
+                                })
+                
+                if choice[0] == "Go Back":
                     return
-                else:
-                    print("Invalid choice. Please enter a valid option.")
+                
+                id = ids[options.index(choice[0])]
+                self.readMessage(id)
+
+                while True:
+                    sub_choice = prompt({
+                                        "type": "list",
+                                        "message" : "Skills Available:",
+                                        "choices": ["Respond to Message", "Delete Message", "Go Back"]
+                                        })
+                    
+                    match sub_choice[0]:
+                        case "Go Back":
+                            break
+                        case "Respond to Message":
+                            receiver_id = self.getSenderID(id)
+                            self.respondToMessage(receiver_id)
+                        case "Delete Message":
+                            self.deleteMessage(id)
+                            options.pop(options.index(choice[0]))
+                            break
 
     def respondToMessage(self, receiver_id):
         message = input("Enter your response: ")

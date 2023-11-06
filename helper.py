@@ -833,3 +833,17 @@ class InCollegeBackend():
                     return True
                 else:
                     return False
+                
+    def getMessages(self):
+        with psycopg.connect(dbname=self.DATABASE_NAME, user=self.DATABASE_USER, password=self.DATABASE_PASSWORD, host=self.DATABASE_HOST, port=self.DATABASE_PORT) as connection:
+            with connection.cursor() as cursor:
+                # Fetch all messages for the current user
+                fetch_query = """
+                SELECT message_id, sender, message_txt, status
+                FROM messages 
+                WHERE receiver = %s
+                ORDER BY message_id;
+                """
+                cursor.execute(fetch_query, (self.userID,))
+                messages = cursor.fetchall()
+        return messages
