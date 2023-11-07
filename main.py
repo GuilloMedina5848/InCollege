@@ -1262,12 +1262,12 @@ class InCollegeServer(InCollegeBackend):
             print("\nYou have no connections in the system.")
  
     def displayInbox(self):
-
-        options = []
-        ids = []
-
+        
         while True:
-            
+
+            options = []
+            ids = []
+
             messages = self.getMessages()
 
             if not messages:
@@ -1290,36 +1290,36 @@ class InCollegeServer(InCollegeBackend):
 
                 options.append("Go Back")
 
-            while True:
-                choice = prompt({
-                                        "type": "list",
-                                        "message" : "Messages:",
-                                        "choices": options
-                                })
-                
-                if choice[0] == "Go Back":
-                    return
-                
-                id = ids[options.index(choice[0])]
-                self.readMessage(id)
 
-                while True:
-                    sub_choice = prompt({
-                                        "type": "list",
-                                        "message" : "Skills Available:",
-                                        "choices": ["Respond to Message", "Delete Message", "Go Back"]
-                                        })
-                    
-                    match sub_choice[0]:
-                        case "Go Back":
-                            break
-                        case "Respond to Message":
-                            receiver_id = self.getSenderID(id)
-                            self.respondToMessage(receiver_id)
-                        case "Delete Message":
-                            self.deleteMessage(id)
-                            options.pop(options.index(choice[0]))
-                            break
+            choice = prompt({
+                                    "type": "list",
+                                    "message" : "Messages:",
+                                    "choices": options
+                            })
+            
+            if choice[0] == "Go Back":
+                return
+            
+            id = ids[options.index(choice[0])]
+            self.readMessage(id)
+
+            while True:
+                sub_choice = prompt({
+                                    "type": "list",
+                                    "message" : "Skills Available:",
+                                    "choices": ["Respond to Message", "Delete Message", "Go Back"]
+                                    })
+                
+                match sub_choice[0]:
+                    case "Go Back":
+                        break
+                    case "Respond to Message":
+                        receiver_id = self.getSenderID(id)
+                        self.respondToMessage(receiver_id)
+                    case "Delete Message":
+                        self.deleteMessage(id)
+                        options.pop(options.index(choice[0]))
+                        break
 
     def respondToMessage(self, receiver_id):
         message = input("Enter your response: ")
