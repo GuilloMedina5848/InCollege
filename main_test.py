@@ -9,6 +9,20 @@ from main import DATABASE_NAME_, InCollegeServer
 sourceFilename = 'main'
 promptModule = sourceFilename + '.prompt'
 
+# List of tables and their sequences if any.
+# Dependent tables (with foreign keys) should be deleted before primary tables.
+tables_sequences = {
+    "messages": "messages_message_id_seq",
+    "job_applications": None,
+    "saved_jobs": None,
+    "educations": None,
+    "experiences": None,
+    "profiles": None,
+    "jobs": "jobs_job_id_seq",
+    "friendships": None,
+    "users": None
+}
+
 defaultUser = "pyTestUser"
 defaultPassword = "pyTest123%"
 defaultFirstName = "pyTest"
@@ -17,12 +31,15 @@ defaultEmailPref = True
 defaultSMSPref = True
 defaultAdsPref = True
 defaultLanguage = "English"
-defaultUniversity = "USF"
-defaultMajor = "CS"
+defaultUniversity = "University of South Florida"
+defaultMajor = "Computer Science"
+defaultUniversity = defaultUniversity.title()
+defaultMajor = defaultMajor.title()
+defaultTier = "Standard"
 defaultProfileTitle = "Title"
 defaultProfileAbout = "About"
-defaultUserTuple = (defaultUser, defaultPassword, defaultFirstName, defaultLastName, defaultEmailPref, defaultSMSPref, defaultAdsPref, defaultLanguage, defaultUniversity, defaultMajor)
-defaultUserTupleString = f"('{defaultUser}', '{defaultPassword}', '{defaultFirstName}', '{defaultLastName}', {defaultEmailPref}, {defaultSMSPref}, {defaultAdsPref}, '{defaultLanguage}', '{defaultUniversity}', '{defaultMajor}')"
+defaultUserTuple = (defaultUser, defaultPassword, defaultFirstName, defaultLastName, defaultEmailPref, defaultSMSPref, defaultAdsPref, defaultLanguage, defaultUniversity, defaultMajor, defaultTier)
+defaultUserTupleString = f"('{defaultUser}', '{defaultPassword}', '{defaultFirstName}', '{defaultLastName}', {defaultEmailPref}, {defaultSMSPref}, {defaultAdsPref}, '{defaultLanguage}', '{defaultUniversity}', '{defaultMajor}', '{defaultTier}')"
 defaultUserTable = [[defaultUserTuple]]
 maxUsers = 10
 
@@ -49,7 +66,9 @@ defaultStartDate = f"{defaultStartYear}-{defaultStartMonth}-{defaultStartDay}"
 defaultStartDatetime = datetime.date(defaultStartYear, defaultStartMonth, defaultStartDay)
 defaultApplicationDescription = "compellingExplanation"
 
-tables = ["job_applications", "saved_jobs", "educations", "experiences", "profiles", "jobs", "friendships", "users"] # this needs to be in an order such that the tables with linked keys are deleted first
+defaultMessage = "pyTestMessage"
+defaultConcatenatedMessage = defaultMessage[:19]
+if len(defaultMessage) > 20: defaultConcatenatedMessage += "..."
 
 DATABASE_TEST_NAME = "incollegetestdb"
 DATABASE_ORIGINAL = DATABASE_NAME_
@@ -72,18 +91,7 @@ def dropTestDatabase():
 def clear():
     with psycopg.connect(dbname=DATABASE_TEST_NAME, user=DATABASE_USER, password=DATABASE_PASSWORD, host=DATABASE_HOST, port=DATABASE_PORT) as connection:
         with connection.cursor() as cursor:
-            # List of tables and their sequences if any.
-            # Dependent tables (with foreign keys) should be deleted before primary tables.
-            tables_sequences = [
-                ("educations", None),
-                ("experiences", None),
-                ("profiles", None),
-                ("jobs", "jobs_job_id_seq"),
-                ("friendships", None),
-                ("users", None)
-            ]
-
-            for table, sequence in tables_sequences:
+            for table, sequence in tables_sequences.items():
                 # Try deleting data from the table
                 try:
                     cursor.execute(f"DELETE FROM {table}")
@@ -109,22 +117,21 @@ def addTestUser(num = 1):
   finalTuple = [[]]
 
   with psycopg.connect(dbname=DATABASE_TEST_NAME, user=DATABASE_USER, password=DATABASE_PASSWORD, host=DATABASE_HOST, port=DATABASE_PORT) as connection:
-        with connection.cursor() as cursor:
-              try:
-                  cursor.execute(f"""INSERT INTO USERS VALUES {defaultUserTupleString}""")
-                  finalTuple[0].append(defaultUserTuple)
-              except Exception as e:
-                  print(f"Error executing query: {e}")
-              if num > 1:
-                 for i in range(1, num):
-                    userTupleString = f"('{defaultUser}{str(i)}', '{defaultPassword}', '{defaultFirstName}', '{defaultLastName}', {defaultEmailPref}, {defaultSMSPref}, {defaultAdsPref}, '{defaultLanguage}', '{defaultUniversity}', '{defaultMajor}')"
-                    userTuple = (defaultUser+str(i), defaultPassword, defaultFirstName, defaultLastName, defaultEmailPref, defaultSMSPref, defaultAdsPref, defaultLanguage, defaultUniversity, defaultMajor)
-                    try:
-                      cursor.execute(f"""INSERT INTO USERS VALUES {userTupleString}""")
-                      finalTuple[0].append(userTuple)
-                    except Exception as e:
-                        print(f"Error executing query: {e}")
-        return finalTuple
+      with connection.cursor() as cursor:
+          try:
+              cursor.execute(f"""INSERT INTO USERS VALUES {defaultUserTupleString}""")
+              finalTuple[0].append(defaultUserTuple)
+          except Exception as e:
+              print(f"Error executing query: {e}")
+          if num > 1:
+              rows = []
+              for i in range(1, num):
+                userTuple = list(defaultUserTuple)
+                userTuple[0] = f"{defaultUser}{str(i)}"
+                rows.append(userTuple)
+                finalTuple[0].append(tuple(userTuple))
+              addRowsToTable(rows, 'users')
+      return finalTuple
   
 def readDB(select = "all"):
     read = []
@@ -138,7 +145,7 @@ def readDB(select = "all"):
               except Exception as e:
                   print(f"Error executing query: {e}")
             else:
-              for table in tables:
+              for table in tables_sequences:
                   try:
                       cursor.execute(f"""SELECT *
                                       FROM {table}""")
@@ -149,15 +156,17 @@ def readDB(select = "all"):
 
 def addRowsToTable(rows, table):
   with psycopg.connect(dbname=DATABASE_TEST_NAME, user=DATABASE_USER, password=DATABASE_PASSWORD, host=DATABASE_HOST, port=DATABASE_PORT) as connection:
+    connection._set_autocommit(True)
     with connection.cursor() as cursor:
       try:
         with cursor.copy(f"COPY {table} FROM STDIN") as copy:
           for row in rows:
             copy.write_row(row)
+        if tables_sequences[table]:
+          cursor.execute(f"""ALTER SEQUENCE {tables_sequences[table]} RESTART WITH {readDB(table)[0][-1][0] + 1}""")
       except Exception as e:
           print(f"Error executing query: {e}")
           exit()
-
 
 dropTestDatabase()
 helper.createDatabase(DATABASE_USER, DATABASE_PASSWORD, DATABASE_TEST_NAME, DATABASE_HOST, DATABASE_PORT)
@@ -225,7 +234,7 @@ def test_mainScreenVideo(monkeypatch, capsys):
 def test_mainScreenSearchUserByLastName(monkeypatch, capsys):
   addTestUser()
 
-  prompts = iter([{0: 'To Find an Existing User'}, {0: 'Last Name'}, {0: 'Exit'}, {0: 'Exit'}])
+  prompts = iter([{0: 'Find an Existing User'}, {0: 'Last Name'}, {0: 'Exit'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
   inputs = iter([defaultLastName])
@@ -239,7 +248,7 @@ def test_mainScreenSearchUserByLastName(monkeypatch, capsys):
 def test_mainScreenSearchUserByUniversity(monkeypatch, capsys):
   addTestUser()
 
-  prompts = iter([{0: 'To Find an Existing User'}, {0: 'University'}, {0: 'Exit'}, {0: 'Exit'}])
+  prompts = iter([{0: 'Find an Existing User'}, {0: 'University'}, {0: 'Exit'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
   inputs = iter([defaultUniversity])
@@ -253,7 +262,7 @@ def test_mainScreenSearchUserByUniversity(monkeypatch, capsys):
 def test_mainScreenSearchUserByMajor(monkeypatch, capsys):
   addTestUser()
 
-  prompts = iter([{0: 'To Find an Existing User'}, {0: 'Major'}, {0: 'Exit'}, {0: 'Exit'}])
+  prompts = iter([{0: 'Find an Existing User'}, {0: 'Major'}, {0: 'Exit'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
   inputs = iter([defaultMajor])
@@ -272,7 +281,7 @@ def test_mainScreenSearchInvalidUser(monkeypatch, capsys):
 
   for testName in testNames:
 
-    prompts = iter([{0: 'To Find an Existing User'}, {0: 'Last Name'}, {0: 'Exit'}, {0: 'Exit'}])
+    prompts = iter([{0: 'Find an Existing User'}, {0: 'Last Name'}, {0: 'Exit'}, {0: 'Exit'}])
     monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
     inputs = iter([testName])
@@ -295,7 +304,7 @@ def test_newUser(monkeypatch, capsys):
 
   for testUsernamePassword in testUsernamesPasswords:
 
-    prompts = iter([{0: 'To Create an Account'}, {0: 'Log out'}, {0: 'Exit'}])
+    prompts = iter([{0: 'Sign Up'}, {0: 'Standard (free)'}, {0: 'Log out'}, {0: 'Exit'}])
     monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
     inputs = iter([testUsernamePassword[0], testUsernamePassword[1], defaultFirstName, defaultLastName, defaultUniversity, defaultMajor])
@@ -303,7 +312,7 @@ def test_newUser(monkeypatch, capsys):
 
     InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
     assert capsys.readouterr().out.split('\n')[-3] == "Thank you, bye!"
-    users[0].append((testUsernamePassword[0], testUsernamePassword[1], defaultFirstName, defaultLastName, defaultEmailPref, defaultSMSPref, defaultAdsPref, defaultLanguage, defaultUniversity, defaultMajor))
+    users[0].append((testUsernamePassword[0], testUsernamePassword[1], defaultFirstName, defaultLastName, defaultEmailPref, defaultSMSPref, defaultAdsPref, defaultLanguage, defaultUniversity, defaultMajor, defaultTier))
     assert readDB("users") == users
 
 # tests new user creation with invalid password due to character requirements
@@ -316,15 +325,15 @@ def test_newUserInvalidCharacter(monkeypatch, capsys):
 
   for testPassword in testPasswords:
 
-    prompts = iter([{0: 'To Create an Account'}, {0: 'Log out'}, {0: 'Exit'}])
+    prompts = iter([{0: 'Sign Up'}, {0: 'Standard (free)'}, {0: 'Log out'}, {0: 'Exit'}])
     monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
-    inputs = iter([defaultUser, testPassword, defaultFirstName, defaultLastName, defaultUniversity, defaultMajor, defaultUser, defaultPassword, defaultFirstName, defaultLastName, defaultUniversity, defaultMajor])
+    inputs = iter([defaultUser, testPassword, defaultPassword, defaultFirstName, defaultLastName, defaultUniversity, defaultMajor])
     monkeypatch.setattr('builtins.input', lambda _: next(inputs))
 
     InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
 
-    assert "Your username is already taken or the password doesn't meet requirements. Please start over" in capsys.readouterr().out
+    assert "This password doesn't meet all the requirements." in capsys.readouterr().out
     assert readDB("users") == defaultUserTable
     clear()
 
@@ -335,59 +344,47 @@ def test_newUserInvalidLength(monkeypatch, capsys):
   testPasswords = ["pyTes7!", "pyTest13!!!!!", "pyTestVeryLongPassword!"]
 
   for testPassword in testPasswords:
-    # simulate inputs: choose to create an account, provide a username and the test password, then provide a valid username and password combo to terminate the program
+    # simulate inputs: choose Sign Up, provide a username and the test password, then provide a valid username and password combo to terminate the program
 
-    prompts = iter([{0: 'To Create an Account'}, {0: 'Log out'}, {0: 'Exit'}])
+    prompts = iter([{0: 'Sign Up'}, {0: 'Standard (free)'}, {0: 'Log out'}, {0: 'Exit'}])
     monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
-    inputs = iter([defaultUser, testPassword, defaultFirstName, defaultLastName, defaultUniversity, defaultMajor, defaultUser, defaultPassword, defaultFirstName, defaultLastName, defaultUniversity, defaultMajor])
+    inputs = iter([defaultUser, testPassword, defaultPassword, defaultFirstName, defaultLastName, defaultUniversity, defaultMajor])
     monkeypatch.setattr('builtins.input', lambda _: next(inputs))
 
     InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
 
     # test if the output informs the user of the invalid password
-    assert "Your username is already taken or the password doesn't meet requirements. Please start over" in capsys.readouterr().out
+    assert "This password doesn't meet all the requirements." in capsys.readouterr().out
 
     # make sure no new users were added to the Users.txt file with invalid input
     assert readDB("users") == defaultUserTable
     clear()
 
 # tests new user creation with existing username
-# kind of an inelegant implementation but works
 def test_newUserInvalidExisting(monkeypatch, capsys):
-  clear()
+  addTestUser()
 
-  testUsernames = [
-      "pyTestUser1", "pyTestUser2", "thisIsALongTestStringPyTestUser3", "4"
-  ]
+  secondUser = list(defaultUserTuple)
+  secondUser[0] = defaultUser+'1'
 
-  users = [[]]
+  prompts = iter([{0: 'Sign Up'}, {0: 'Standard (free)'}, {0: 'Log out'}, {0: 'Exit'}])
+  monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
-  for testUsername in testUsernames:
-    users[0].append((testUsername, defaultPassword, defaultFirstName, defaultLastName, defaultEmailPref, defaultSMSPref, defaultAdsPref, defaultLanguage, defaultUniversity, defaultMajor))
+  inputs = iter([defaultUser, defaultUser+'1', defaultPassword, defaultFirstName, defaultLastName, defaultUniversity, defaultMajor])
+  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
 
-  addRowsToTable(users[0], 'users')
+  InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
 
-  for testUsername in testUsernames:
-
-    prompts = iter([{0: 'To Create an Account'}, {0: 'Log out'}, {0: 'Exit'}])
-    monkeypatch.setattr(promptModule, lambda _: next(prompts))
-
-    inputs = iter([testUsername, defaultPassword, defaultFirstName, defaultLastName, defaultUniversity, defaultMajor, defaultUser, defaultPassword, defaultFirstName, defaultLastName, defaultUniversity, defaultMajor])
-    monkeypatch.setattr('builtins.input', lambda _: next(inputs))
-
-    InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
-    assert capsys.readouterr().out.split('\n')[-3] == "Thank you, bye!"
-    users[0].append(defaultUserTuple)
-    assert users == readDB("users")
-    users[0].pop()
+  assert "This username is already taken." in capsys.readouterr().out
+  assert readDB("users") == [[defaultUserTuple, tuple(secondUser)]]
 
 # tests new user creation with maximum number of users
 def test_newUserExceedsLimit(monkeypatch, capsys):
   comparison = addTestUser(maxUsers)
 
   # create the 6th account
-  prompts = iter([{0: 'To Create an Account'}, {0: 'For Existing Users'}, {0: 'Log out'}, {0: 'Exit'}])
+  prompts = iter([{0: 'Sign Up'}, {0: 'Sign In'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword])
@@ -413,13 +410,13 @@ def test_loginExistingUser(monkeypatch, capsys):
   users = [[]]
 
   for testUsernamePassword in testUsernamesPasswords:
-    users[0].append((testUsernamePassword[0], testUsernamePassword[1], defaultFirstName, defaultLastName, defaultEmailPref, defaultSMSPref, defaultAdsPref, defaultLanguage, defaultUniversity, defaultMajor))
+    users[0].append((testUsernamePassword[0], testUsernamePassword[1], defaultFirstName, defaultLastName, defaultEmailPref, defaultSMSPref, defaultAdsPref, defaultLanguage, defaultUniversity, defaultMajor, defaultTier))
 
   addRowsToTable(users[0], 'users')
 
   for testUsernamePassword in testUsernamesPasswords:
 
-    prompts = iter([{0: 'For Existing Users'}, {0: 'Log out'}, {0: 'Exit'}])
+    prompts = iter([{0: 'Sign In'}, {0: 'Log out'}, {0: 'Exit'}])
     monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
     inputs = iter([testUsernamePassword[0], testUsernamePassword[1], defaultFirstName, defaultLastName])
@@ -437,7 +434,7 @@ def test_loginInvalidUsername(monkeypatch, capsys):
 
   for testUsername in testUsernames:
 
-    prompts = iter([{0: 'For Existing Users'}, {0: 'Log out'}, {0: 'Exit'}])
+    prompts = iter([{0: 'Sign In'}, {0: 'Log out'}, {0: 'Exit'}])
     monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
     inputs = iter([testUsername, defaultPassword, defaultUser, defaultPassword])
@@ -456,7 +453,7 @@ def test_loginInvalidPassword(monkeypatch, capsys):
 
   for testPassword in testPasswords:
 
-    prompts = iter([{0: 'For Existing Users'}, {0: 'Log out'}, {0: 'Exit'}])
+    prompts = iter([{0: 'Sign In'}, {0: 'Log out'}, {0: 'Exit'}])
     monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
     inputs = iter([defaultUser, testPassword, defaultUser, defaultPassword])
@@ -472,7 +469,7 @@ def test_loginInvalidPassword(monkeypatch, capsys):
 def test_searchJob(monkeypatch, capsys):
   addTestUser()
 
-  prompts = iter([{0: 'For Existing Users'}, {0: 'Job search/internship'}, {0: 'Search for a Job'}, {0: 'Back to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
+  prompts = iter([{0: 'Sign In'}, {0: 'Job search/internship'}, {0: 'Search for a Job'}, {0: 'Back to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword])
@@ -486,7 +483,7 @@ def test_searchJob(monkeypatch, capsys):
 def test_postJob(monkeypatch, capsys):
   addTestUser()
 
-  prompts = iter([{0: 'For Existing Users'}, {0: 'Job search/internship'}, {0: 'Post a Job'}, {0: 'Back to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
+  prompts = iter([{0: 'Sign In'}, {0: 'Job search/internship'}, {0: 'Post a Job'}, {0: 'Back to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword, defaultTitle, defaultDescription, defaultEmployer, defaultLocation, defaultSalary])
@@ -508,7 +505,7 @@ def test_postJobExceedsLimit(monkeypatch, capsys):
   
   addRowsToTable(jobs[0], 'jobs')
 
-  prompts = iter([{0: 'For Existing Users'}, {0: 'Job search/internship'}, {0: 'Post a Job'}, {0: 'Back to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
+  prompts = iter([{0: 'Sign In'}, {0: 'Job search/internship'}, {0: 'Post a Job'}, {0: 'Back to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword, defaultTitle, defaultDescription, defaultEmployer, defaultLocation, defaultSalary])
@@ -528,7 +525,7 @@ def test_searchSkill(monkeypatch, capsys):
 
   for skill in skills:
 
-    prompts = iter([{0: 'For Existing Users'}, {0: 'Learn a new skill'}, {0: skill}, {0: 'Back to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
+    prompts = iter([{0: 'Sign In'}, {0: 'Learn a new skill'}, {0: skill}, {0: 'Back to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
     monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
     inputs = iter([defaultUser, defaultPassword])
@@ -550,13 +547,13 @@ def test_usefulLinksSignIn(monkeypatch, capsys):
   users = [[]]
 
   for testUsernamePassword in testUsernamesPasswords:
-    users[0].append((testUsernamePassword[0], testUsernamePassword[1], defaultFirstName, defaultLastName, defaultEmailPref, defaultSMSPref, defaultAdsPref, defaultLanguage, defaultUniversity, defaultMajor))
+    users[0].append((testUsernamePassword[0], testUsernamePassword[1], defaultFirstName, defaultLastName, defaultEmailPref, defaultSMSPref, defaultAdsPref, defaultLanguage, defaultUniversity, defaultMajor, defaultTier))
 
   addRowsToTable(users[0], 'users')
 
   for testUsernamePassword in testUsernamesPasswords:
 
-    prompts = iter([{0: 'Useful Links'}, {0: 'General'}, {0: 'Sign Up'}, {0: 'For Existing User'}, {0: 'Log out'}, {0: 'Back to General'}, {0: 'Back to Useful Links'}, {0: 'Back to Main Menu'}, {0: 'Exit'}])
+    prompts = iter([{0: 'Useful Links'}, {0: 'General'}, {0: 'Sign Up'}, {0: 'Sign In'}, {0: 'Log out'}, {0: 'Back to General'}, {0: 'Back to Useful Links'}, {0: 'Back to Main Menu'}, {0: 'Exit'}])
     monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
     inputs = iter([testUsernamePassword[0], testUsernamePassword[1]])
@@ -580,7 +577,7 @@ def test_usefulLinksSignUp(monkeypatch, capsys):
 
   for testUsernamePassword in testUsernamesPasswords:
 
-    prompts = iter([{0: 'Useful Links'}, {0: 'General'}, {0: 'Sign Up'}, {0: 'To Create an Account'}, {0: 'Log out'}, {0: 'Back to General'}, {0: 'Back to Useful Links'}, {0: 'Back to Main Menu'}, {0: 'Exit'}])
+    prompts = iter([{0: 'Useful Links'}, {0: 'General'}, {0: 'Sign Up'}, {0: 'Sign Up'}, {0: 'Standard (free)'}, {0: 'Log out'}, {0: 'Back to General'}, {0: 'Back to Useful Links'}, {0: 'Back to Main Menu'}, {0: 'Exit'}])
     monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
     inputs = iter([testUsernamePassword[0], testUsernamePassword[1], defaultFirstName, defaultLastName, defaultUniversity, defaultMajor])
@@ -588,7 +585,7 @@ def test_usefulLinksSignUp(monkeypatch, capsys):
 
     InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
     assert capsys.readouterr().out.split('\n')[-3] == "Thank you, bye!"
-    users[0].append((testUsernamePassword[0], testUsernamePassword[1], defaultFirstName, defaultLastName, defaultEmailPref, defaultSMSPref, defaultAdsPref, defaultLanguage, defaultUniversity, defaultMajor)) 
+    users[0].append((testUsernamePassword[0], testUsernamePassword[1], defaultFirstName, defaultLastName, defaultEmailPref, defaultSMSPref, defaultAdsPref, defaultLanguage, defaultUniversity, defaultMajor, defaultTier)) 
     assert readDB("users") == users
 
 def test_helpCenter(monkeypatch, capsys):
@@ -729,7 +726,7 @@ def test_userAgreement(monkeypatch, capsys):
 def test_privacyPolicy(monkeypatch, capsys):
   addTestUser()
 
-  prompts = iter([{0: 'For Existing Users'}, {0: 'InCollege Important Links'}, {0: 'Privacy Policy'}, {0: 'Back to Important Links'}, {0: 'Back to Main Menu'},{0: 'Log out'}, {0: 'Exit'}])
+  prompts = iter([{0: 'Sign In'}, {0: 'InCollege Important Links'}, {0: 'Privacy Policy'}, {0: 'Back to Important Links'}, {0: 'Back to Main Menu'},{0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword])
@@ -771,7 +768,7 @@ def test_brandPolicy(monkeypatch, capsys):
 def test_guestControlEmail(monkeypatch, capsys):
   addTestUser()
 
-  prompts = iter([{0: 'For Existing Users'}, {0: 'InCollege Important Links'}, {0: 'Guest Controls'}, {0: 'Email'}, {0: 'Back to Important Links'}, {0: 'Back to Main Menu'}, {0: 'Log out'}, {0: 'Exit'}])
+  prompts = iter([{0: 'Sign In'}, {0: 'InCollege Important Links'}, {0: 'Guest Controls'}, {0: 'Email'}, {0: 'Back to Important Links'}, {0: 'Back to Main Menu'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword, 'no'])
@@ -785,7 +782,7 @@ def test_guestControlEmail(monkeypatch, capsys):
 def test_guestControlSMS(monkeypatch, capsys):
   addTestUser()
 
-  prompts = iter([{0: 'For Existing Users'}, {0: 'InCollege Important Links'}, {0: 'Guest Controls'}, {0: 'SMS'}, {0: 'Back to Important Links'}, {0: 'Back to Main Menu'}, {0: 'Log out'}, {0: 'Exit'}])
+  prompts = iter([{0: 'Sign In'}, {0: 'InCollege Important Links'}, {0: 'Guest Controls'}, {0: 'SMS'}, {0: 'Back to Important Links'}, {0: 'Back to Main Menu'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword, 'no'])
@@ -799,7 +796,7 @@ def test_guestControlSMS(monkeypatch, capsys):
 def test_guestControlAds(monkeypatch, capsys):
   addTestUser()
 
-  prompts = iter([{0: 'For Existing Users'}, {0: 'InCollege Important Links'}, {0: 'Guest Controls'}, {0: 'Advertising'}, {0: 'Back to Important Links'}, {0: 'Back to Main Menu'}, {0: 'Log out'}, {0: 'Exit'}])
+  prompts = iter([{0: 'Sign In'}, {0: 'InCollege Important Links'}, {0: 'Guest Controls'}, {0: 'Advertising'}, {0: 'Back to Important Links'}, {0: 'Back to Main Menu'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword, 'no'])
@@ -813,7 +810,7 @@ def test_guestControlAds(monkeypatch, capsys):
 def test_language(monkeypatch, capsys):
   addTestUser()
 
-  prompts = iter([{0: 'For Existing Users'}, {0: 'InCollege Important Links'}, {0: 'Languages'}, {0: 'Spanish'}, {0: 'Back to Important Links'}, {0: 'Back to Main Menu'}, {0: 'Log out'}, {0: 'Exit'}])
+  prompts = iter([{0: 'Sign In'}, {0: 'InCollege Important Links'}, {0: 'Languages'}, {0: 'Spanish'}, {0: 'Back to Important Links'}, {0: 'Back to Main Menu'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword])
@@ -831,7 +828,7 @@ def test_language(monkeypatch, capsys):
 def test_newConnectionRequest(monkeypatch, capsys):
   addTestUser(2)
 
-  prompts = iter([{0: 'For Existing Users'}, {0: 'Find someone you know'}, {0: 'Last Name'}, {0: f'User ID: {defaultUser+"1"}, Name: {defaultFirstName} {defaultLastName}, University: {defaultUniversity}, Major: {defaultMajor}'}, {0: 'Exit'}, {0: 'Log out'}, {0: 'Exit'}])
+  prompts = iter([{0: 'Sign In'}, {0: 'Find someone you know'}, {0: 'Last Name'}, {0: f'User ID: {defaultUser+"1"}, Name: {defaultFirstName} {defaultLastName}, University: {defaultUniversity}, Major: {defaultMajor}'}, {0: 'Exit'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword, defaultLastName, 'yes'])
@@ -849,7 +846,7 @@ def test_receiveConnectionRequestOnLogin(monkeypatch, capsys):
 
   addRowsToTable(connections[0], 'friendships')
 
-  prompts = iter([{0: 'For Existing Users'}, {0: 'Log out'}, {0: 'Exit'}])
+  prompts = iter([{0: 'Sign In'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword, 'yes'])
@@ -863,7 +860,7 @@ def test_receiveConnectionRequestOnLogin(monkeypatch, capsys):
 def test_disconnectFromConnectionEmpty(monkeypatch, capsys):
   addTestUser()
 
-  prompts = iter([{0: 'For Existing Users'}, {0: 'Disconnect from a Connection'}, {0: 'Log out'}, {0: 'Exit'}])
+  prompts = iter([{0: 'Sign In'}, {0: 'Disconnect from a Connection'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword, defaultUser])
@@ -880,7 +877,7 @@ def test_disconnectFromConnection(monkeypatch, capsys):
 
   addRowsToTable(connections[0], 'friendships')
 
-  prompts = iter([{0: 'For Existing Users'}, {0: 'Disconnect from a Connection'}, {0: 'Log out'}, {0: 'Exit'}])
+  prompts = iter([{0: 'Sign In'}, {0: 'Disconnect from a Connection'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword, defaultUser+'1'])
@@ -893,7 +890,7 @@ def test_disconnectFromConnection(monkeypatch, capsys):
 def test_showMyNetworkEmpty(monkeypatch, capsys):
   addTestUser()
   
-  prompts = iter([{0: 'For Existing Users'}, {0: 'Show my Network'}, {0: 'Go Back'}, {0: 'Log out'}, {0: 'Exit'}])
+  prompts = iter([{0: 'Sign In'}, {0: 'Show my Network'}, {0: 'Go Back'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword])
@@ -911,7 +908,7 @@ def test_showMyNetwork(monkeypatch, capsys):
   
   addRowsToTable(connections[0], 'friendships')
 
-  prompts = iter([{0: 'For Existing Users'}, {0: 'Show my Network'}, {0: 'Go Back'}, {0: 'Log out'}, {0: 'Exit'}])
+  prompts = iter([{0: 'Sign In'}, {0: 'Show my Network'}, {0: 'Go Back'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword])
@@ -932,7 +929,7 @@ def test_addJobExperience(monkeypatch, capsys):
   addRowsToTable(mock_experience, "experiences")
   addRowsToTable(mock_profile, "profiles")
 
-  prompts = iter([{0: 'For Existing Users'}, {0: 'Profile'}, {0: 'Go Back'}, {0: 'Log out'}, {0: 'Exit'}])
+  prompts = iter([{0: 'Sign In'}, {0: 'Profile'}, {0: 'Go Back'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
   inputs = iter([defaultUser, defaultPassword])
   monkeypatch.setattr('builtins.input', lambda _: next(inputs))
@@ -947,7 +944,7 @@ def test_addEducation(monkeypatch, capsys):
   mock_profile = [[1, defaultUser, "Title", "About section"]]
   addRowsToTable(mock_education, "educations")
   addRowsToTable(mock_profile, "profiles")
-  prompts = iter([{0: 'For Existing Users'}, {0: 'Profile'}, {0: 'Go Back'}, {0: 'Log out'}, {0: 'Exit'}])
+  prompts = iter([{0: 'Sign In'}, {0: 'Profile'}, {0: 'Go Back'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
   inputs = iter([defaultUser, defaultPassword])
   monkeypatch.setattr('builtins.input', lambda _: next(inputs))
@@ -960,7 +957,7 @@ def test_addEducation(monkeypatch, capsys):
 def test_createProfile(monkeypatch, capsys):
   addTestUser()
   
-  prompts = iter([{0: 'For Existing Users'}, {0: 'Profile'}, {0: 'Create Profile'}, {0: 'Finish'}, {0: 'Log out'}, {0: 'Exit'}])
+  prompts = iter([{0: 'Sign In'}, {0: 'Profile'}, {0: 'Create Profile'}, {0: 'Finish'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword])
@@ -977,7 +974,7 @@ def test_editProfile(monkeypatch, capsys):
   profile = [[1, defaultUser, defaultProfileTitle, defaultProfileAbout]]
   addRowsToTable(profile, 'profiles')
 
-  prompts = iter([{0: 'For Existing Users'}, {0: 'Profile'}, {0: 'Edit Profile'}, {0: 'Title'}, {0: 'Finish'}, {0: 'Log out'}, {0: 'Exit'}])
+  prompts = iter([{0: 'Sign In'}, {0: 'Profile'}, {0: 'Edit Profile'}, {0: 'Title'}, {0: 'Finish'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword, "Title-example"])
@@ -993,7 +990,7 @@ def test_viewFriendEmptyProfile(monkeypatch, capsys):
   connections = [[1, defaultUser, defaultUser+"1", "confirmed"]]
   addRowsToTable(connections, "friendships")
 
-  prompts = iter([{0: 'For Existing Users'}, {0: 'Show my Network'}, {0: f'User ID: {defaultUser+"1"}, Name: {defaultFirstName} {defaultLastName}'}, {0: 'Log out'}, {0: 'Exit'}])
+  prompts = iter([{0: 'Sign In'}, {0: 'Show my Network'}, {0: f'User ID: {defaultUser+"1"}, Name: {defaultFirstName} {defaultLastName}'}, {0: 'View Profile'}, {0: 'Go Back'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword])
@@ -1010,10 +1007,10 @@ def test_viewFriendProfile(monkeypatch, capsys):
   profile = [[1, defaultUser+"1", defaultProfileTitle, defaultProfileAbout]]
   addRowsToTable(profile, "profiles")
 
-  prompts = iter([{0: 'For Existing Users'}, {0: 'Show my Network'}, {0: f'User ID: {defaultUser+"1"}, Name: {defaultFirstName} {defaultLastName} (View Profile)'}, {0: 'Log out'}, {0: 'Exit'}])
+  prompts = iter([{0: 'Sign In'}, {0: 'Show my Network'}, {0: f'User ID: {defaultUser+"1"}, Name: {defaultFirstName} {defaultLastName} (View Profile)'}, {0: 'View Profile'}, {0: 'Go Back'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
-  inputs = iter([defaultUser, defaultPassword])
+  inputs = iter([defaultUser, defaultPassword, "no"])
   monkeypatch.setattr('builtins.input', lambda _: next(inputs))
 
   InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
@@ -1036,7 +1033,7 @@ def test_deleteJob(monkeypatch, capsys):
   jobs = [defaultJobTuple]
   addRowsToTable(jobs, 'jobs')
 
-  prompts = iter([{0: 'For Existing Users'}, {0: 'Job search/internship'}, {0: 'Delete a Job'}, {0: f"Job ID: 1, User ID: {defaultUser}, Title: {defaultTitle}, Description: {defaultDescription}, Employer: {defaultEmployer}, Location: {defaultLocation}, Salary: {defaultSalary}"}, {0: 'Back to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
+  prompts = iter([{0: 'Sign In'}, {0: 'Job search/internship'}, {0: 'Delete a Job'}, {0: f"Job ID: 1, User ID: {defaultUser}, Title: {defaultTitle}, Description: {defaultDescription}, Employer: {defaultEmployer}, Location: {defaultLocation}, Salary: {defaultSalary}"}, {0: 'Back to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword])
@@ -1049,7 +1046,7 @@ def test_deleteJob(monkeypatch, capsys):
 def test_deleteJobEmpty(monkeypatch, capsys):
   addTestUser()
 
-  prompts = iter([{0: 'For Existing Users'}, {0: 'Job search/internship'}, {0: 'Delete a Job'}, {0: 'Back to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
+  prompts = iter([{0: 'Sign In'}, {0: 'Job search/internship'}, {0: 'Delete a Job'}, {0: 'Back to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword])
@@ -1064,7 +1061,7 @@ def test_searchJob(monkeypatch, capsys):
   jobs = [defaultJobTuple]
   addRowsToTable(jobs, 'jobs')
 
-  prompts = iter([{0: 'For Existing Users'}, {0: 'Job search/internship'}, {0: 'Search for a Job'}, {0: f"Job ID: 1, Title: {defaultTitle}"}, {0: 'Go Back'}, {0: 'Go Back'}, {0: 'Back to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
+  prompts = iter([{0: 'Sign In'}, {0: 'Job search/internship'}, {0: 'Search for a Job'}, {0: f"Job ID: 1, Title: {defaultTitle}"}, {0: 'Go Back'}, {0: 'Go Back'}, {0: 'Back to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword])
@@ -1077,7 +1074,7 @@ def test_searchJob(monkeypatch, capsys):
 def test_searchJobEmpty(monkeypatch, capsys):
   addTestUser()
 
-  prompts = iter([{0: 'For Existing Users'}, {0: 'Job search/internship'}, {0: 'Search for a Job'}, {0: 'Back to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
+  prompts = iter([{0: 'Sign In'}, {0: 'Job search/internship'}, {0: 'Search for a Job'}, {0: 'Back to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword])
@@ -1092,7 +1089,7 @@ def test_saveJob(monkeypatch, capsys):
   jobs = [defaultJobTuple]
   addRowsToTable(jobs, 'jobs')
 
-  prompts = iter([{0: 'For Existing Users'}, {0: 'Job search/internship'}, {0: 'Search for a Job'}, {0: f"Job ID: 1, Title: {defaultTitle}"}, {0: 'Save/Unsave the Job'}, {0: 'Go Back'}, {0: 'Back to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
+  prompts = iter([{0: 'Sign In'}, {0: 'Job search/internship'}, {0: 'Search for a Job'}, {0: f"Job ID: 1, Title: {defaultTitle}"}, {0: 'Save/Unsave the Job'}, {0: 'Go Back'}, {0: 'Back to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword])
@@ -1110,7 +1107,7 @@ def test_unsaveJob(monkeypatch, capsys):
   saved_jobs = [(defaultUser, 1)]
   addRowsToTable(saved_jobs, 'saved_jobs')
 
-  prompts = iter([{0: 'For Existing Users'}, {0: 'Job search/internship'}, {0: 'Search for a Job'}, {0: f"Job ID: 1, Title: {defaultTitle}"}, {0: 'Save/Unsave the Job'}, {0: 'Go Back'}, {0: 'Back to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
+  prompts = iter([{0: 'Sign In'}, {0: 'Job search/internship'}, {0: 'Search for a Job'}, {0: f"Job ID: 1, Title: {defaultTitle}"}, {0: 'Save/Unsave the Job'}, {0: 'Go Back'}, {0: 'Back to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword])
@@ -1128,7 +1125,7 @@ def test_applyToJob(monkeypatch, capsys):
   jobs = [jobPost]
   addRowsToTable(jobs, 'jobs')
 
-  prompts = iter([{0: 'For Existing Users'}, {0: 'Job search/internship'}, {0: 'Search for a Job'}, {0: f"Job ID: 1, Title: {defaultTitle}"}, {0: 'Apply for the Job'}, {0: 'Go Back'}, {0: 'Back to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
+  prompts = iter([{0: 'Sign In'}, {0: 'Job search/internship'}, {0: 'Search for a Job'}, {0: f"Job ID: 1, Title: {defaultTitle}"}, {0: 'Apply for the Job'}, {0: 'Go Back'}, {0: 'Back to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword, defaultApplicationDescription])
@@ -1149,7 +1146,7 @@ def test_applyToAppliedJob(monkeypatch, capsys):
   applications = [(1, defaultUser, 1, defaultGraduationDatetime, defaultStartDatetime, defaultApplicationDescription)]
   addRowsToTable(applications, 'job_applications')
 
-  prompts = iter([{0: 'For Existing Users'}, {0: 'Job search/internship'}, {0: 'Search for a Job'}, {0: f"Job ID: 1, Title: {defaultTitle} (Applied to)"}, {0: 'Apply for the Job'}, {0: 'Go Back'}, {0: 'Back to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
+  prompts = iter([{0: 'Sign In'}, {0: 'Job search/internship'}, {0: 'Search for a Job'}, {0: f"Job ID: 1, Title: {defaultTitle} (Applied to)"}, {0: 'Apply for the Job'}, {0: 'Go Back'}, {0: 'Back to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword, defaultApplicationDescription])
@@ -1167,7 +1164,7 @@ def test_applyToOwnJob(monkeypatch, capsys):
   jobs = [defaultJobTuple]
   addRowsToTable(jobs, 'jobs')
 
-  prompts = iter([{0: 'For Existing Users'}, {0: 'Job search/internship'}, {0: 'Search for a Job'}, {0: f"Job ID: 1, Title: {defaultTitle}"}, {0: 'Apply for the Job'}, {0: 'Go Back'}, {0: 'Back to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
+  prompts = iter([{0: 'Sign In'}, {0: 'Job search/internship'}, {0: 'Search for a Job'}, {0: f"Job ID: 1, Title: {defaultTitle}"}, {0: 'Apply for the Job'}, {0: 'Go Back'}, {0: 'Back to the main menu'}, {0: 'Log out'}, {0: 'Exit'}])
   monkeypatch.setattr(promptModule, lambda _: next(prompts))
 
   inputs = iter([defaultUser, defaultPassword])
@@ -1184,7 +1181,7 @@ def test_listAppliedJobs(monkeypatch, capsys):
   jobs = [jobPost]
   addRowsToTable(jobs, 'jobs')
 
-  prompts = iter([{0: 'For Existing Users'}, {0: 'Job search/internship'}, {0: 'Search for a Job'}, 
+  prompts = iter([{0: 'Sign In'}, {0: 'Job search/internship'}, {0: 'Search for a Job'}, 
                   {0: f"Job ID: 1, Title: {defaultTitle}"}, {0: 'Apply for the Job'}, 
                   {0: 'Go Back'}, {0: 'List of Applied Jobs'}, {0: 'Back to the main menu'}, 
                   {0: 'Log out'}, {0: 'Exit'}])
@@ -1214,7 +1211,7 @@ def test_listUnappliedJobs(monkeypatch, capsys):
   jobs = [jobPost]
   addRowsToTable(jobs, 'jobs')
 
-  prompts = iter([{0: 'For Existing Users'}, {0: 'Job search/internship'}, {0: 'Search for a Job'}, 
+  prompts = iter([{0: 'Sign In'}, {0: 'Job search/internship'}, {0: 'Search for a Job'}, 
                   {0: f"Job ID: 1, Title: {defaultTitle}"}, {0: 'Apply for the Job'}, 
                   {0: 'Go Back'}, {0: 'List not Applied Jobs'}, {0: 'Back to the main menu'}, 
                   {0: 'Log out'}, {0: 'Exit'}])
@@ -1244,7 +1241,7 @@ def test_listSavedJobs(monkeypatch, capsys):
   jobs = [jobPost]
   addRowsToTable(jobs, 'jobs')
 
-  prompts = iter([{0: 'For Existing Users'}, {0: 'Job search/internship'}, {0: 'Search for a Job'}, 
+  prompts = iter([{0: 'Sign In'}, {0: 'Job search/internship'}, {0: 'Search for a Job'}, 
                   {0: f"Job ID: 1, Title: {defaultTitle}"}, {0: 'Save/Unsave the Job'}, 
                   {0: 'Go Back'}, {0: 'List of Saved Jobs'}, {0: 'Back to the main menu'}, 
                   {0: 'Log out'}, {0: 'Exit'}])
@@ -1260,6 +1257,128 @@ def test_listSavedJobs(monkeypatch, capsys):
 
   assert "\nSaved Jobs:\n- Title: pyTester\n  Description: testsPython\n  Employer: pyTest\n  Location: pyTest\n  Salary: 0" in capsys.readouterr().out
 
+## Sprint 7 Tests ##
+
+def test_sendMessage(monkeypatch, capsys):
+  addTestUser(2)
+  friendships = [[1, defaultUser, defaultUser+"1", "confirmed"]]
+  addRowsToTable(friendships, "friendships")
+
+  prompts = iter([{0: 'Sign In'}, {0: 'Messages'}, {0: 'Send Message'}, {0: f"User ID: {defaultUser+'1'}, Name: {defaultFirstName} {defaultLastName}"}, {0: 'Go Back'}, {0: 'Log out'}, {0: 'Exit'}])
+  monkeypatch.setattr(promptModule, lambda _: next(prompts))
+
+  inputs = iter([defaultUser, defaultPassword, defaultMessage])
+  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+  InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
+
+  assert f"Message sent to user {defaultUser+'1'}!" in capsys.readouterr().out
+  assert readDB("messages")[0] == [(1, defaultUser, defaultUser + '1', defaultMessage, "unread")]
+
+def test_sendMessageThroughNetwork(monkeypatch, capsys):
+  clear()
+  firstUser = list(defaultUserTuple)
+  secondUser = list(defaultUserTuple)
+  firstUser[10] = "Plus"
+  secondUser[0] = defaultUser+'1'
+  users = [tuple(firstUser), tuple(secondUser)]
+  addRowsToTable(users, 'users')
+  friendships = [[1, defaultUser, defaultUser+"1", "confirmed"]]
+  addRowsToTable(friendships, "friendships")
+
+  prompts = iter([{0: 'Sign In'}, {0: 'Show my Network'}, {0: f"User ID: {defaultUser+'1'}, Name: {defaultFirstName} {defaultLastName}"}, {0: 'Send Message'}, {0: 'Go Back'}, {0: 'Log out'}, {0: 'Exit'}])
+  monkeypatch.setattr(promptModule, lambda _: next(prompts))
+
+  inputs = iter([defaultUser, defaultPassword, defaultMessage])
+  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+  InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
+
+  assert f"Message sent to user {defaultUser+'1'}!" in capsys.readouterr().out
+  assert readDB("messages")[0] == [(1, defaultUser, defaultUser + '1', defaultMessage, "unread")]
+
+def test_sendMessagePlus(monkeypatch, capsys):
+  clear()
+  firstUser = list(defaultUserTuple)
+  secondUser = list(defaultUserTuple)
+  firstUser[10] = "Plus"
+  secondUser[0] = defaultUser+'1'
+  users = [tuple(firstUser), tuple(secondUser)]
+  addRowsToTable(users, 'users')
+
+  prompts = iter([{0: 'Sign In'}, {0: 'Messages'}, {0: 'Send Message'}, {0: 'Show all students'}, {0: f"User ID: {defaultUser+'1'}, Name: {defaultFirstName} {defaultLastName}"}, {0: 'Go Back'}, {0: 'Go Back'}, {0: 'Log out'}, {0: 'Exit'}])
+  monkeypatch.setattr(promptModule, lambda _: next(prompts))
+
+  inputs = iter([defaultUser, defaultPassword, defaultMessage])
+  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+  InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
+
+  assert f"Message sent to user {defaultUser+'1'}!" in capsys.readouterr().out
+  assert readDB("messages")[0] == [(1, defaultUser, defaultUser + '1', defaultMessage, "unread")]
+
+def test_messageNotificationOnLogin(monkeypatch, capsys):
+  addTestUser(2)
+  messages = [[1, defaultUser+'1', defaultUser, defaultMessage, "unread"]]
+  addRowsToTable(messages, "messages")
+
+  prompts = iter([{0: 'Sign In'}, {0: 'Log out'}, {0: 'Exit'}])
+  monkeypatch.setattr(promptModule, lambda _: next(prompts))
+
+  inputs = iter([defaultUser, defaultPassword])
+  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+  InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
+
+  assert f"You have 1 pending messages in your inbox!" in capsys.readouterr().out
+
+def test_readMessage(monkeypatch, capsys):
+  addTestUser(2)
+  messages = [[1, defaultUser+'1', defaultUser, defaultMessage, "unread"]]
+  addRowsToTable(messages, "messages")
+
+  prompts = iter([{0: 'Sign In'}, {0: 'Messages'}, {0: 'Inbox'}, {0: f'(UNREAD) {defaultFirstName} {defaultLastName}: {defaultMessage}'}, {0: 'Go Back'}, {0: 'Go Back'}, {0: 'Go Back'}, {0: 'Log out'}, {0: 'Exit'}])
+  monkeypatch.setattr(promptModule, lambda _: next(prompts))
+
+  inputs = iter([defaultUser, defaultPassword])
+  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+  InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
+
+  assert defaultMessage in capsys.readouterr().out
+  assert readDB('messages')[0][0][4] == "read"
+
+def test_deleteMessage(monkeypatch, capsys):
+  addTestUser(2)
+  messages = [[1, defaultUser+'1', defaultUser, defaultMessage, "unread"]]
+  addRowsToTable(messages, "messages")
+
+  prompts = iter([{0: 'Sign In'}, {0: 'Messages'}, {0: 'Inbox'}, {0: f'(UNREAD) {defaultFirstName} {defaultLastName}: {defaultMessage}'}, {0: 'Delete Message'}, {0: 'Go Back'}, {0: 'Go Back'}, {0: 'Log out'}, {0: 'Exit'}])
+  monkeypatch.setattr(promptModule, lambda _: next(prompts))
+
+  inputs = iter([defaultUser, defaultPassword])
+  monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+  InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
+
+  assert "Message deleted." in capsys.readouterr().out
+  assert readDB('messages') == [[]]
+
+def test_respondToMessage(monkeypatch, capsys):
+    addTestUser(2)
+    messages = [[1, defaultUser+'1', defaultUser, defaultMessage, "unread"]]
+    addRowsToTable(messages, "messages")
+
+    prompts = iter([{0: 'Sign In'}, {0: 'Messages'}, {0: 'Inbox'}, {0: f'(UNREAD) {defaultFirstName} {defaultLastName}: {defaultConcatenatedMessage}'}, {0: 'Respond to Message'}, {0: 'Go Back'}, {0: 'Go Back'}, {0: 'Go Back'}, {0: 'Log out'}, {0: 'Exit'}])
+    monkeypatch.setattr(promptModule, lambda _: next(prompts))
+
+    inputs = iter([defaultUser, defaultPassword, defaultMessage])
+    monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+    InCollegeServer(DATABASE_TEST_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
+
+    assert "Response message sent." in capsys.readouterr().out
+    assert readDB('messages') == [[(1, defaultUser+'1', defaultUser, defaultMessage, "read"), (2, defaultUser, defaultUser+'1', defaultMessage, "unread")]]
 
 def test_dummy():
   dropTestDatabase()
