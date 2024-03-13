@@ -28,14 +28,12 @@ How to restore the database in your local machine:
     -F c: Indicates the format of the backup file (custom format in this case).
     "path_to_incollegedb.backup": Path to the backup file.
 ------------------------------------------------------------------------------------------------------
-
 How to export and share a database dump:
     During development, you might change the database. Here is how you can share it to github.
     In the command prompt (for Windows), type:
         pg_dump -U postgres -h localhost -p 5432 -W -F c -b -v -f "path/to/store/incollegedb.backup" incollegedb
     In my machine, I use:
         pg_dump -U postgres -h localhost -p 5432 -W -F c -b -v -f "E:/SoftwareEngineeringCode/InCollege/incollegedb.backup" incollegedb
-        
 ------------------------------------------------------------------------------------------------------
 How to connect to the database:
     
