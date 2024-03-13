@@ -34,6 +34,7 @@ How to export and share a database dump:
         pg_dump -U postgres -h localhost -p 5432 -W -F c -b -v -f "path/to/store/incollegedb.backup" incollegedb
     In my machine, I use:
         pg_dump -U postgres -h localhost -p 5432 -W -F c -b -v -f "E:/SoftwareEngineeringCode/InCollege/incollegedb.backup" incollegedb
+        
 ------------------------------------------------------------------------------------------------------
 How to connect to the database:
     
