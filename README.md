@@ -28,14 +28,16 @@ How to restore the database in your local machine:
     -F c: Indicates the format of the backup file (custom format in this case).
     "path_to_incollegedb.backup": Path to the backup file.
 ------------------------------------------------------------------------------------------------------
+
 How to export and share a database dump:
     During development, you might change the database. Here is how you can share it to github.
     In the command prompt (for Windows), type:
         pg_dump -U postgres -h localhost -p 5432 -W -F c -b -v -f "path/to/store/incollegedb.backup" incollegedb
     In my machine, I use:
         pg_dump -U postgres -h localhost -p 5432 -W -F c -b -v -f "E:/SoftwareEngineeringCode/InCollege/incollegedb.backup" incollegedb
+        
 ------------------------------------------------------------------------------------------------------
-How to connect to the databas:
+How to connect to the database:
     
     with psycopg2.connect(dbname= self.DATABASE_NAME, user= self.DATABASE_USER, password= self.DATABASE_PASSWORD, host= self.DATABASE_HOST, port= self.DATABASE_PORT) as connection:
         with connection.cursor() as cursor:
@@ -154,4 +156,5 @@ salary: A DECIMAL field to store the salary (if provided).
 friendship_id: An auto-incremented primary key of type SERIAL that will uniquely identify each friendship or friend request.
 student1_id & student2_id: Both are foreign keys that reference the user_id in the users table. They indicate the two users involved in the friendship or friend request.
 status: A TEXT field that checks whether the value is either 'pending' or 'confirmed'. This indicates the current status of the friend request.
+
 ------------------------------------------------------------------------------------------------------
